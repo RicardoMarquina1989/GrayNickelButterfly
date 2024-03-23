@@ -21,5 +21,21 @@ Close-range liquidity supply earns more fees than liquidity spread out on a much
 - collect fees
 - trasfer rewars to owner wallet
 
+## Dependencies
+This library have been tested in the following environment.
+
+* Python: 3.10.6
+* solders: 0.18.1
+* solana: 0.30.2
+* anchorpy: 0.18.0
+
+## Installation
+```commandline
+pip install -r requirements.txt
+```
+
 ## Run
-``` python3 main.py```
+
+```commandline
+python3 main.py
+```
