@@ -15,6 +15,15 @@ Active management helps to reduce the chances of impermanent loss and zero fees.
 
 Close-range liquidity supply earns more fees than liquidity spread out on a much larger scale. Concentrated ranges ensure effective liquidity deployment. However, to maintain the set position and supply liquidity requires active participation. 
 
+### What is the difference between a CLAMM and a traditional exchange?
+There are two major ways to trade cryptocurrencies: traditional orderbook exchanges (CLOBs) and automated market maker (AMM/CLAMM) protocols. Orderbooks look to match sellers and buyers based on price and amount of tokens to trade. In AMMs users trade against a pool of tokens, rather than directly with other users. 
+
+For blockchain applications, Orca believes that CLAMM-based trading protocols are the superior approach because of their simplicity and composability and that with proper education and the right tools a CLAMM can achieve everything a CLOB can and more.
+
+### Research and learning should be engaged with before diving in
+
+- With fully permissionless pool creation anyone can create a pool on Orca.
+
 ## Aim
 - open position
 - close position
