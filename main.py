@@ -57,7 +57,13 @@ async def open_position(upper: int, lower: int):
     decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals
     decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals
     price = PriceMath.sqrt_price_x64_to_price(whirlpool.sqrt_price, decimals_a, decimals_b)
-
+    print("whirlpool token_mint_a", whirlpool.token_mint_a)
+    print("whirlpool token_mint_b", whirlpool.token_mint_b)
+    print("whirlpool tick_spacing", whirlpool.tick_spacing)
+    print("whirlpool tick_current_index", whirlpool.tick_current_index)
+    print("whirlpool sqrt_price", whirlpool.sqrt_price)
+    price = PriceMath.sqrt_price_x64_to_price(whirlpool.sqrt_price, decimals_a, decimals_b)
+    print("whirlpool price", DecimalUtil.to_fixed(price, decimals_b))
     # Calculate tick indices
     tick_lower_index = PriceMath.price_to_initializable_tick_index(lower, decimals_a, decimals_b, whirlpool.tick_spacing)
     tick_upper_index = PriceMath.price_to_initializable_tick_index(upper, decimals_a, decimals_b, whirlpool.tick_spacing)
