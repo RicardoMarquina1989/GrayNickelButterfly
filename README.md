@@ -20,6 +20,9 @@ There are two major ways to trade cryptocurrencies: traditional orderbook exchan
 
 For blockchain applications, Orca believes that CLAMM-based trading protocols are the superior approach because of their simplicity and composability and that with proper education and the right tools a CLAMM can achieve everything a CLOB can and more.
 
+### Can I withdraw my liquidity at any time?
+Yes, the Orca protocol allows you to withdraw liquidity at any time.
+
 ### Research and learning should be engaged with before diving in
 
 - With fully permissionless pool creation anyone can create a pool on Orca.
