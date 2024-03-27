@@ -14,6 +14,22 @@ from orca_whirlpool.utils import TokenUtil, DecimalUtil, PriceMath, PDAUtil
 
 from constants import *
 
+gctx = None
+def get_context() -> WhirlpoolContext:
+    if gctx is not None:
+        return gctx
+    
+    """Read wallet from file and return the keypair."""
+    wallet_path = ("wallet.json", "wallet_main.json")[APP_ENV == "main"]
+    with Path(wallet_path).open() as f:
+        keypair = Keypair.from_bytes(bytes(json.load(f)))
+    print("wallet pubkey", keypair.pubkey())
+
+    connection = AsyncClient(RPC_ENDPOINT_URL)  # Create Solana RPC client
+    ctx = WhirlpoolContext(ORCA_WHIRLPOOL_PROGRAM_ID, connection, keypair)  # Create Whirlpool context
+    gctx = ctx
+    return gctx
+
 def rand_pubkey() -> Pubkey:
     return Keypair().pubkey()
 
@@ -68,20 +84,10 @@ def collect_operation():
         )
     )
 
-def read_wallet() -> Keypair:
-    """Read wallet from file and return the keypair."""
-    wallet_path = ("wallet.json", "wallet_main.json")[APP_ENV == "main"]
-    with Path(wallet_path).open() as f:
-        keypair = Keypair.from_bytes(bytes(json.load(f)))
-    print("wallet pubkey", keypair.pubkey())
-    return keypair
-
 
 async def open_position(upper: int, lower: int):
     """Open a position based on upper and lower parameters."""
-    keypair = read_wallet()  # Read wallet keypair
-    connection = AsyncClient(RPC_ENDPOINT_URL)  # Create Solana RPC client
-    ctx = WhirlpoolContext(ORCA_WHIRLPOOL_PROGRAM_ID, connection, keypair)  # Create Whirlpool context
+    ctx = get_context()  # Create or get already created Whirlpool context
 
     # Fetch whirlpool details
     whirlpool_pubkey = SOL_USDC_WHIRLPOOL_PUBKEY
@@ -131,6 +137,7 @@ async def open_position(upper: int, lower: int):
 def close_position():
     """Close a position."""
     print("Performing 'close' operation")
+    ctx = get_context()  # Create or get already created Whirlpool context
     program_id = rand_pubkey()
     position_authority = rand_pubkey()
     receiver = rand_pubkey()
