@@ -11,7 +11,7 @@ from solders.pubkey import Pubkey
 
 from orca_whirlpool.constants import ORCA_WHIRLPOOL_PROGRAM_ID
 from orca_whirlpool.context import WhirlpoolContext
-from orca_whirlpool.instruction import WhirlpoolIx, OpenPositionParams
+from orca_whirlpool.instruction import WhirlpoolIx, OpenPositionParams, CollectFeesParams, ClosePositionParams, CollectProtocolFeesParams, CollectRewardParams
 from orca_whirlpool.transaction import TransactionBuilder
 from orca_whirlpool.utils import TokenUtil, DecimalUtil, PriceMath, PDAUtil
 
@@ -99,11 +99,77 @@ async def open_position(upper: int, lower: int):
 def close_position():
     """Close a position."""
     print("Performing 'close' operation")
+    program_id = rand_pubkey()
+    position_authority = rand_pubkey()
+    receiver = rand_pubkey()
+    position = rand_pubkey()
+    position_mint = rand_pubkey()
+    position_token_account = rand_pubkey()
 
+    result = WhirlpoolIx.close_position(
+        program_id,
+        ClosePositionParams(
+            position_authority=position_authority,
+            receiver=receiver,
+            position=position,
+            position_mint=position_mint,
+            position_token_account=position_token_account,
+        )
+    )
+
+def rand_pubkey() -> Pubkey:
+    return Keypair().pubkey()
 
 def collect_operation():
     """Perform 'collect' operation."""
-    print("Performing 'collect' operation")
+    print("Collecting fees")
+
+    program_id = rand_pubkey()
+    whirlpool = rand_pubkey()
+    position_authority = rand_pubkey()
+    position = rand_pubkey()
+    position_token_account = rand_pubkey()
+    token_owner_account_a = rand_pubkey()
+    token_vault_a = rand_pubkey()
+    token_owner_account_b = rand_pubkey()
+    token_vault_b = rand_pubkey()
+
+    result = WhirlpoolIx.collect_fees(
+        program_id,
+        CollectFeesParams(
+            whirlpool=whirlpool,
+            position_authority=position_authority,
+            position=position,
+            position_token_account=position_token_account,
+            token_owner_account_a=token_owner_account_a,
+            token_vault_a=token_vault_a,
+            token_owner_account_b=token_owner_account_b,
+            token_vault_b=token_vault_b,
+        )
+    )
+    print("Collect Fee Result=> ", result)
+
+    program_id = rand_pubkey()
+    whirlpools_config = rand_pubkey()
+    whirlpool = rand_pubkey()
+    collect_protocol_fees_authority = rand_pubkey()
+    token_vault_a = rand_pubkey()
+    token_vault_b = rand_pubkey()
+    token_destination_a = rand_pubkey()
+    token_destination_b = rand_pubkey()
+
+    result = WhirlpoolIx.collect_protocol_fees(
+        program_id,
+        CollectProtocolFeesParams(
+            whirlpools_config=whirlpools_config,
+            whirlpool=whirlpool,
+            collect_protocol_fees_authority=collect_protocol_fees_authority,
+            token_vault_a=token_vault_a,
+            token_vault_b=token_vault_b,
+            token_destination_a=token_destination_a,
+            token_destination_b=token_destination_b,
+        )
+    )
 
 
 def read_wallet() -> Keypair:
