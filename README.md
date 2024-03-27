@@ -24,6 +24,34 @@ For blockchain applications, Orca believes that CLAMM-based trading protocols ar
 
 - With fully permissionless pool creation anyone can create a pool on Orca.
 
+### Tick Spacing
+<table>
+<thead>
+<tr>
+    <th>Tick Spacing</th>
+    <th>Default Fee Rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+    <td>1</td>
+    <td>0.01%</td>
+</tr>
+<tr>
+    <td>8</td>
+    <td>0.05%</td>
+</tr>
+<tr>
+    <td>64</td>
+    <td>0.3%</td>
+</tr>
+<tr>
+    <td>128</td>
+    <td>1.0%</td>
+</tr>
+</tbody>
+</table>
+
 ## Aim
 - open position
 - close position
