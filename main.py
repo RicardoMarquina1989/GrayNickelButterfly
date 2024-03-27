@@ -15,14 +15,11 @@ from orca_whirlpool.instruction import WhirlpoolIx, OpenPositionParams, CollectF
 from orca_whirlpool.transaction import TransactionBuilder
 from orca_whirlpool.utils import TokenUtil, DecimalUtil, PriceMath, PDAUtil
 
-# Load environment variables from .env file
-load_dotenv()
-
 # Global constants
-RPC_ENDPOINT_URL = os.getenv("RPC_ENDPOINT_URL")
-APP_ENV = os.getenv("APP_ENV")
+RPC_ENDPOINT_URL = "https://ultra-warmhearted-forest.solana-mainnet.quiknode.pro/3f6b7002852530fcde95d4695f039616c078e1e5/"
+WS_ENDPOINT_URL = "wss://ultra-warmhearted-forest.solana-mainnet.quiknode.pro/3f6b7002852530fcde95d4695f039616c078e1e5/"
+APP_ENV = "main"
 SOL_USDC_WHIRLPOOL_PUBKEY = Pubkey.from_string("HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ")
-
 
 async def main():
     """Main function to parse arguments and execute operations."""
