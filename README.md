@@ -26,6 +26,9 @@ Yes, the Orca protocol allows you to withdraw liquidity at any time.
 ### Research and learning should be engaged with before diving in
 
 - With fully permissionless pool creation anyone can create a pool on Orca.
+### Account Architecture
+
+<img alt="" style="max-width: 100%; height: auto; visibility: visible;" src="docs/image.png" sizes="(max-width: 640px) 400px, 768px" width="431" height="432" />
 
 ### Tick Spacing
 <table>
