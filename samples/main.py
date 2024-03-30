@@ -8,7 +8,7 @@ from position import get_context, list_position, update_fees_and_rewards, collec
 async def main():
     """Main function to parse arguments and execute operations."""
     parser = argparse.ArgumentParser(description="Script for performing various operations.")
-    parser.add_argument("operation", choices=["open", "close", "collect", "list"], help="Operation to perform")
+    parser.add_argument("operation", choices=["open", "close", "collect", "list", "check"], help="Operation to perform")
     parser.add_argument("--upper", type=int, help="Upper parameter for 'open' operation")
     parser.add_argument("--lower", type=int, help="Lower parameter for 'open' operation")
     args = parser.parse_args()
