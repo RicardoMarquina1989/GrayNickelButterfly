@@ -13,6 +13,8 @@ Slashes show a long and short option for argparse (https://stackoverflow.com/que
 Also not looked at is the situation of slippage and priority fee settings (this is important for getting a txid done). So there needs to be a flag for slippage and priority fee. Slippage ranges are 0.1 - 1.5%, default should be 0.3%. Priority fee i would set by default to 0. 
 flag for slippage -s, for priority fee -S. It is crucial, that it is checked if a transaction can be done with the settings. Otherwise there will be created bad transactions. For this there should be something like an automated simulation. And if the simulation worked automatically create the tx. If it failed, tell on the commandline. Of course this could be enhanced dramatically with cool algorithms, but this is out of scope of that tool.
 
+Also i recognized that two types of functionality are completelly missing which is, increasing a position and only withdraw a certain amount from a position. For those i would like to add TBD amount of money to our current project, so you can add them. 
+
 ### CLI
 -> *check*
 long / short (argparse)
@@ -21,6 +23,23 @@ long / short (argparse)
 -> *create*
 long / short (argparse)
 --open-position / -o --lower /-l  --upper/u  --pool --token0 / -t0 --token1 /-t1 --amount0 / -a0 --amount1 / -a1 
+
+
+## Increase Position
+
+Add token to already existing position
+
+### CLI
+
+TBD
+
+## Withdraw Position
+
+This is close to the feature of closing a position, but different, as only a certain amount is withdrawn and the NFT is *NOT* burned.
+
+### CLI
+
+TBD
 
 ## Pool Gathering
 
@@ -37,12 +56,23 @@ This is part before a position can be created. It must be possible to get a list
 Would be nice to check for pools which have only USDC oder SOL/WSOL, but i this might be an extra, we can do as additional contract negotiation/money
 ## Close Position
 
+### Description
+
+Close a position. Normally also the corresponding NFT has to be burned. This should be done by default, but
+also possible NOT to burn the NFT but instead:
+
+1. Keeping the NFT in the wallet
+2. Transfering the NFT to a different wallet
+
+## CLI
+
 To close a position
 --close-position \addr\
 
 Close all positions, no address is necessary, but an extra flag has to be given to circumvent accidently deletion. Flag like --force
 
 --close-all-positions
+
 ## Check Position
 
 ### Description
