@@ -19,9 +19,11 @@ Those are features i can imagine to add to that tool, as soon as we are done wit
 		3. collected fees
 		4. swapped tokens
 5. Integration of other Dexes
+   
    There are other CLMM Pools, which are interesting to integrate. However, to my knowledge at least RAY has no Python SDK, but python is the language we stick to.
 	1. Raydium
 	2. Meteor
+
 6. Exploration and integration of other def/dex instruments like
 	1. Kamino Finance
 	2. MarginFi
