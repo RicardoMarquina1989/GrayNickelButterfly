@@ -6,23 +6,23 @@
 ### Description
 This is for setting up a position, in theory you want to give two amounts, BUT in practise you do not know the amount exactly before. Because, depending on the lower and upper end the % of amount differs. This seems also depend on how much other positions are in that range. So it *might* be that, one or two flags are not necessary.
 
-This is why, i say here --lp which is the overall amount of liquidity and the flag --check which shall not create the position, but show the distribution necessary for each token0, token1. So first check, then create:
+This is why, i say here `--lp` which is the overall amount of liquidity and the flag `--check` which shall not create the position, but show the distribution necessary for each token0, token1. So first check, then create:
 
 Slashes show a long and short option for argparse (https://stackoverflow.com/questions/28638813/how-to-make-a-short-and-long-version-of-a-required-argument-using-python-argpars)
 
-Also not looked at is the situation of slippage and priority fee settings (this is important for getting a txid done). So there needs to be a flag for slippage and priority fee. Slippage ranges are 0.1 - 1.5%, default should be 0.3%. Priority fee i would set by default to 0. 
-flag for slippage -s, for priority fee -S. It is crucial, that it is checked if a transaction can be done with the settings. Otherwise there will be created bad transactions. For this there should be something like an automated simulation. And if the simulation worked automatically create the tx. If it failed, tell on the commandline. Of course this could be enhanced dramatically with cool algorithms, but this is out of scope of that tool.
+Also not looked at is the situation of slippage and priority fee settings (this is important for getting a txid done). So there needs to be a flag for slippage and priority fee. Slippage ranges are `0.1` - `1.5%`, default should be `0.3%`. Priority fee i would set by default to `0`. 
+flag for slippage `-s`, for priority fee `-S`. It is crucial, that it is checked if a transaction can be done with the settings. Otherwise there will be created bad transactions. For this there should be something like an automated simulation. And if the simulation worked automatically create the tx. If it failed, tell on the commandline. Of course this could be enhanced dramatically with cool algorithms, but this is out of scope of that tool.
 
 Also i recognized that two types of functionality are completelly missing which is, increasing a position and only withdraw a certain amount from a position. For those i would like to add TBD amount of money to our current project, so you can add them. 
 
 ### CLI
 -> *check*
 long / short (argparse)
---open-position / -o --lower --upper --pool --token0 --token1  --liquidity / --lp --check 
+`--open-position / -o --lower --upper --pool --token0 --token1  --liquidity / --lp --check`
 
 -> *create*
 long / short (argparse)
---open-position / -o --lower /-l  --upper/u  --pool --token0 / -t0 --token1 /-t1 --amount0 / -a0 --amount1 / -a1 
+`--open-position / -o --lower /-l  --upper/u  --pool --token0 / -t0 --token1 /-t1 --amount0 / -a0 --amount1 / -a1`
 
 
 ## Increase Position
@@ -49,9 +49,9 @@ This is part before a position can be created. It must be possible to get a list
 
 
 ### CLI
---show-pools 
+`--show-pools `
 
---show-pool \<address\>
+`--show-pool \<address\>`
 
 Would be nice to check for pools which have only USDC oder SOL/WSOL, but i this might be an extra, we can do as additional contract negotiation/money
 ## Close Position
@@ -67,11 +67,11 @@ also possible NOT to burn the NFT but instead:
 ## CLI
 
 To close a position
---close-position \addr\
+`--close-position \addr\`
 
-Close all positions, no address is necessary, but an extra flag has to be given to circumvent accidently deletion. Flag like --force
+Close all positions, no address is necessary, but an extra flag has to be given to circumvent accidently deletion. Flag like `--force`
 
---close-all-positions
+`--close-all-positions`
 
 ## Check Position
 
@@ -81,11 +81,11 @@ Show all or one position, with pool, token, amount, current state of pool like t
 ### CLI
 Show one position only with address
 long / short (argparse)
---show-position address / -p
+`--show-position address / -p`
 
 Show all positions
 long / short (argparse)
---show-positions / -P
+`--show-positions / -P`
 
 ## Check fees
 
@@ -121,19 +121,22 @@ Goal is to  transfer the fees to the owner of a wallet. After the fees have been
 
 one position, no transfer to other wallet, the fees are normally gathered to the wallet which created the position 
 long / short (argparse)
---get-fees / -f
+`--get-fees / -f`
 
 one position, transfer to other wallet, fees are gathered and afterwards transfered to a defined wallet
 long / short (argparse)
---get-fees / -f --to-wallet / -w addr
+`--get-fees / -f --to-wallet / -w addr`
 
 
 get fees from all positions, no transfer to other wallet, the fees are normally gathered to the wallet which created the position 
 
 long / short (argparse)
---get-all-fees / -F
+`--get-all-fees / -F`
 
 get fees from all positions, transfer to other wallet, fees are gathered and afterwards transfered to a defined wallet
 
 long / short (argparse)
---get-all-fees / -F --to-wallet / -w
+`--get-all-fees / -F --to-wallet / -w`
+
+
+
