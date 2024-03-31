@@ -12,17 +12,34 @@ from orca_whirlpools_py.whirlpools import find_whirlpools
 async def main():
     connection = AsyncClient(RPC_ENDPOINT_URL)
 
-    orca_supported_whirlpools = await find_whirlpools(connection)
+    # orca_supported_whirlpools = await find_whirlpools(connection)
     
+    # for p in orca_supported_whirlpools:
+    #     print(str(p.pubkey), str(p.whirlpools_config), str(p.token_mint_a), str(p.token_mint_b), p.tick_spacing)
+
+    
+    # print(len(orca_supported_whirlpools), "pools found")
+    
+    only_pool_pubkey = Pubkey.from_string("5sXp2yzQ9RLDrX6fgvbwqwzLTJtJfLbk7cmLNKncmNXR")
+    only_pool_config = Pubkey.from_string("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ")
+    
+    fetcher = AccountFetcher(connection)
+    result = await fetcher.get_fee_tier(only_pool_pubkey)
+    print("result", result)
+    # only_pool_config = await fetcher.get_whirlpools_config(ORCA_WHIRLPOOLS_CONFIG)
+    # print("only_pool_pubkey", only_pool_pubkey, "only_pool_config", only_pool_config)
+    return
+    orca_supported_whirlpools = await find_whirlpools(connection=connection, whirlpool_config=only_pool_config)
+    # print(orca_supported_whirlpools)
     for p in orca_supported_whirlpools:
         print(str(p.pubkey), str(p.whirlpools_config), str(p.token_mint_a), str(p.token_mint_b), p.tick_spacing)
-
     print(len(orca_supported_whirlpools), "pools found")
+    # print(str(p.pubkey), str(p.whirlpools_config), str(p.token_mint_a), str(p.token_mint_b), p.tick_spacing)
 
-    pubkeys = list(map(lambda x: x.pubkey, orca_supported_whirlpools))
-    fetcher = AccountFetcher(connection)
-    whirlpools = await fetcher.list_whirlpools(pubkeys)
-    print(whirlpools)
+    # pubkeys = list(map(lambda x: x.pubkey, orca_supported_whirlpools))
+    # fetcher = AccountFetcher(connection)
+    # whirlpools = await fetcher.list_whirlpools(pubkeys)
+    # print(whirlpools)
 
 asyncio.run(main())
 
