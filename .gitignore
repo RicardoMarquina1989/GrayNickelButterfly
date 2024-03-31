@@ -128,3 +128,5 @@ dmypy.json
 wallet_main.json
 samples/wallet.json
 samples/wallet_main.json
+src/wallet.json
+src/wallet_main.json

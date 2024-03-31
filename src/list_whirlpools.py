@@ -7,15 +7,12 @@ from orca_whirlpool.accounts import AccountFinder, AccountFetcher
 from orca_whirlpool.constants import ORCA_WHIRLPOOL_PROGRAM_ID, ORCA_WHIRLPOOLS_CONFIG
 
 from constants import *
+from orca_whirlpools_py.whirlpools import find_whirlpools
 
 async def main():
     connection = AsyncClient(RPC_ENDPOINT_URL)
 
-    finder = AccountFinder(connection)
-    orca_supported_whirlpools = await finder.find_whirlpools_by_whirlpools_config(
-        ORCA_WHIRLPOOL_PROGRAM_ID,
-        ORCA_WHIRLPOOLS_CONFIG,
-    )
+    orca_supported_whirlpools = await find_whirlpools(connection)
     
     for p in orca_supported_whirlpools:
         print(str(p.pubkey), str(p.whirlpools_config), str(p.token_mint_a), str(p.token_mint_b), p.tick_spacing)
