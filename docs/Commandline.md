@@ -18,10 +18,12 @@ Also i recognized that two types of functionality are completelly missing which 
 ### CLI
 -> *check*
 long / short (argparse)
+
 `--open-position / -o --lower --upper --pool --token0 --token1  --liquidity / --lp --check`
 
 -> *create*
 long / short (argparse)
+
 `--open-position / -o --lower /-l  --upper/u  --pool --token0 / -t0 --token1 /-t1 --amount0 / -a0 --amount1 / -a1`
 
 
@@ -49,11 +51,13 @@ This is part before a position can be created. It must be possible to get a list
 
 
 ### CLI
+Show all pools
 `--show-pools `
-
+Show only pool address
 `--show-pool \<address\>`
 
 Would be nice to check for pools which have only USDC oder SOL/WSOL, but i this might be an extra, we can do as additional contract negotiation/money
+
 ## Close Position
 
 ### Description
@@ -67,6 +71,7 @@ also possible NOT to burn the NFT but instead:
 ## CLI
 
 To close a position
+
 `--close-position \addr\`
 
 Close all positions, no address is necessary, but an extra flag has to be given to circumvent accidently deletion. Flag like `--force`
@@ -81,10 +86,12 @@ Show all or one position, with pool, token, amount, current state of pool like t
 ### CLI
 Show one position only with address
 long / short (argparse)
+
 `--show-position address / -p`
 
 Show all positions
 long / short (argparse)
+
 `--show-positions / -P`
 
 ## Check fees
@@ -102,7 +109,9 @@ long / short
 
 all known positions	
 long / short
+
 `--check-all-fees  / -C`
+
 ## Get Fees / Transfer fees
 
 ### Description
@@ -121,10 +130,12 @@ Goal is to  transfer the fees to the owner of a wallet. After the fees have been
 
 one position, no transfer to other wallet, the fees are normally gathered to the wallet which created the position 
 long / short (argparse)
+
 `--get-fees / -f`
 
 one position, transfer to other wallet, fees are gathered and afterwards transfered to a defined wallet
 long / short (argparse)
+
 `--get-fees / -f --to-wallet / -w addr`
 
 
