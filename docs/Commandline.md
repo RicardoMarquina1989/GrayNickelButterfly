@@ -131,11 +131,13 @@ long / short (argparse)
 get fees from all positions, no transfer to other wallet, the fees are normally gathered to the wallet which created the position 
 
 long / short (argparse)
+
 `--get-all-fees / -F`
 
 get fees from all positions, transfer to other wallet, fees are gathered and afterwards transfered to a defined wallet
 
 long / short (argparse)
+
 `--get-all-fees / -F --to-wallet / -w`
 
 
