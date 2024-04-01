@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from typing import NamedTuple
 from solana.rpc.async_api import AsyncClient
 from solana.rpc.types import TokenAccountOpts
@@ -12,7 +13,15 @@ from orca_whirlpool.utils import TokenUtil, LiquidityMath, PriceMath, PDAUtil, P
 
 RPC_ENDPOINT_URL = "https://ultra-warmhearted-forest.solana-mainnet.quiknode.pro/3f6b7002852530fcde95d4695f039616c078e1e5/"
 # MY_WALLET_PUBKEY = Pubkey.from_string("CamNqsYSGtgVn5Y81zNWyA842K33WqCj1H33Wp1qaiWz")
-MY_WALLET_PUBKEY = Pubkey.from_string("93jK1URnVqR9j5CLfiEuJEN3jtKkr5dtqcs1PuLpsYAJ")
+
+# quick and dirty extra for testing
+if len(sys.argv)<2:
+    print('{0} <wallet addr>'.format(sys.argv[0]))
+    sys.exit(1)
+
+my_wallet_key=sys.argv[1]
+MY_WALLET_PUBKEY = Pubkey.from_string(my_wallet_key)
+#MY_WALLET_PUBKEY = Pubkey.from_string("93jK1URnVqR9j5CLfiEuJEN3jtKkr5dtqcs1PuLpsYAJ")
 
 class PositionRelatedAccounts(NamedTuple):
     mint: Pubkey
