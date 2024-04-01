@@ -32,7 +32,6 @@ async def find_whirlpools():
         for wpool in data["whirlpools"]:
             symbolA = warn_undefined(wpool['tokenA']['symbol'], wpool['tokenA']['mint'])
             symbolB = warn_undefined(wpool['tokenB']['symbol'], wpool['tokenB']['mint'])
-
             whirlpools.append({
                 "address": Pubkey.from_string(wpool['address']),
                 "name": f"{symbolA}/{symbolB}({wpool['tickSpacing']})",
@@ -56,10 +55,12 @@ async def find_whirlpools():
         return None
 
 def warn_undefined(s, mint):
-  return s.strip() or get_short_address_notation(mint, 4) # use "||" to process "" as undefined
+  if len(s.strip()) > 8:
+     return get_short_address_notation(s.strip(), 4)
+  return (s.strip() or get_short_address_notation(mint.strip(), 4)) # use "||" to process "" as undefined
 
 def get_short_address_notation(address, prefixSuffixLength= 5):
   if ( address is None ):
     return address
   
-  return address[:prefixSuffixLength] + "..." + address[:-prefixSuffixLength]
+  return address[:prefixSuffixLength] + "..." + address[-prefixSuffixLength:]
