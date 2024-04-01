@@ -11,8 +11,7 @@ from orca_whirlpool.constants import ORCA_WHIRLPOOL_PROGRAM_ID
 from orca_whirlpool.context import WhirlpoolContext
 from orca_whirlpool.utils import TokenUtil, LiquidityMath, PriceMath, PDAUtil, PositionUtil
 
-RPC_ENDPOINT_URL = "https://ultra-warmhearted-forest.solana-mainnet.quiknode.pro/3f6b7002852530fcde95d4695f039616c078e1e5/"
-# MY_WALLET_PUBKEY = Pubkey.from_string("CamNqsYSGtgVn5Y81zNWyA842K33WqCj1H33Wp1qaiWz")
+from constants import *
 
 # quick and dirty extra for testing
 if len(sys.argv)<2:
