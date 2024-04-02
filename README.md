@@ -23,6 +23,10 @@ For blockchain applications, Orca believes that CLAMM-based trading protocols ar
 ### Can I withdraw my liquidity at any time?
 Yes, the Orca protocol allows you to withdraw liquidity at any time.
 
+### How much Orca requires to charge fees to create a pool or a position?
+Orca does not charge fees to create a pool, nor to create a position in an existing pool. However, network and rent fees are payable and if the Match deposit ratio function is used trading fees and network fees will also be payable on that transaction.
+
+Users of the SDK can reduce position NFT related fees by using openPosition without Metadata - for detail liaise with a Developer Advocate in
 ### Research and learning should be engaged with before diving in
 
 - With fully permissionless pool creation anyone can create a pool on Orca.
