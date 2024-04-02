@@ -37,7 +37,12 @@ It shows the status of tickets.
 - initial readme
 ## MS2 - CLMM Functionality Completely Integrated, all requested functionality working 
 - folder structure
-- 
+- show all whirlpools
+- check liquidity distribution
+- list position that are belogned to my wallet
+- open_position 🙂
+- close position
+
 ## MS3 - Documentation and stable code 
 ## MS4 - All bugs fixed, Project finished 
 ## MS N - All missing functions
