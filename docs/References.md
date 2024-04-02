@@ -1,3 +1,10 @@
+# Definitions
+1.  APY
+Annual percentage yield (APY) refers to how much interest you earn on savings and takes compound interest into account. 
+2.  APR
+Annual percentage rate (APR) focuses on how much interest you'll pay for money you've borrowed.
+
+# URLs
 https://uniultra.xyz/blog/what-is-concentrated-liquidity-market-maker
 https://messari.io/exchange/orca-whirlpool
 https://messari.io/report/orca-solanas-human-friendly-automated-market-maker
