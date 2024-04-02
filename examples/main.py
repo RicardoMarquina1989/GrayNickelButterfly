@@ -3,7 +3,7 @@ import asyncio
 
 from orca_whirlpool.transaction import TransactionBuilder
 
-from examples.open_position import get_context, list_position, update_fees_and_rewards, collect_fees, collect_reward, open_position, close_position, collect_fees
+from examples.open_position_only import get_context, list_position, update_fees_and_rewards, collect_fees, collect_reward, open_position, close_position, collect_fees
 
 async def main():
     """Main function to parse arguments and execute operations."""
