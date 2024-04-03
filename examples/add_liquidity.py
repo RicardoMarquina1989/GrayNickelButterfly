@@ -4,7 +4,6 @@ import sys
 
 from solders.pubkey import Pubkey
 
-from constants import SOL_USDC_WHIRLPOOL_PUBKEY
 from orca_whirlpools_py.position_manager import add_liquidity
 from utils import get_context
 '''
@@ -14,7 +13,7 @@ python add_liquidity.py -P 5ebE8hm4g2scC7w7KQGP8z22hMDdkShWVCgE3MHBFSLE -s 0.3 -
 '''
 async def main():
     parser = argparse.ArgumentParser(description="Open a position in the specific whirlpool.")
-    parser.add_argument("-P", "--position_pubkey", help="Whirlpool public key", default=SOL_USDC_WHIRLPOOL_PUBKEY)
+    parser.add_argument("-P", "--position_pubkey", help="Position public key")
     parser.add_argument('-s', "--slippage", type=float, help="acceptable slippage value when deposit", default=0.3)
     parser.add_argument('-S', "--priority_fee", type=float, help="Priority fee(0~1000)", default=0)
     parser.add_argument('-D', "--deposit_amount", type=float, help="Deposit amount when increase liquidity")
