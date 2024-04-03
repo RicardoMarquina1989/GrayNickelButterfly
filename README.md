@@ -23,6 +23,9 @@ For blockchain applications, Orca believes that CLAMM-based trading protocols ar
 ### Can I withdraw my liquidity at any time?
 Yes, the Orca protocol allows you to withdraw liquidity at any time.
 
+### Can liquidity providers collect protocol fees?
+No, the protocol fee is not for the liquidity provider. The protocol fee is a portion of the total fee collected from the user during a swap on the Whirlpool protocol, and it is diverted to a specific wallet designated for the protocol treasury. This protocol fee is managed separately and can only be collected by the entity authorized by the WhirlpoolConfig's collectProtocolFeesAuthority. The remaining portion of the fee after deducting the protocol fee is distributed to the liquidity providers as their fee. Therefore, the protocol fee is distinct from the fee received by the liquidity provider.
+
 ### How much Orca requires to charge fees to create a pool or a position?
 Orca does not charge fees to create a pool, nor to create a position in an existing pool. However, network and rent fees are payable and if the Match deposit ratio function is used trading fees and network fees will also be payable on that transaction.
 
