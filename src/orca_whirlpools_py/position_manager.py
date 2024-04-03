@@ -7,8 +7,8 @@ from orca_whirlpool.types import Percentage
 from orca_whirlpool.context import WhirlpoolContext
 from orca_whirlpool.instruction import WhirlpoolIx, OpenPositionParams, CollectFeesParams, ClosePositionParams, CollectProtocolFeesParams, CollectRewardParams, DecreaseLiquidityParams, UpdateFeesAndRewardsParams, IncreaseLiquidityParams
 from orca_whirlpool.transaction import TransactionBuilder
-from orca_whirlpool.utils import TokenUtil, DecimalUtil, PriceMath, PositionUtil, PDAUtil, TickUtil, LiquidityMath
-from orca_whirlpool.quote import QuoteBuilder, IncreaseLiquidityQuoteParams
+from orca_whirlpool.utils import TokenUtil, TickArrayUtil, DecimalUtil, PriceMath, PositionUtil, PDAUtil, TickUtil, LiquidityMath
+from orca_whirlpool.quote import QuoteBuilder, IncreaseLiquidityQuoteParams, CollectFeesQuoteParams, CollectRewardsQuoteParams
 
 def rand_pubkey() -> Pubkey:
     return Keypair().pubkey()
@@ -187,7 +187,6 @@ async def open_position_only(ctx:WhirlpoolContext, whirlpool_pubkey: Pubkey, upp
 @return:    
 """
 async def add_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, deposit_amount: float, slippage:int=30, priority_fee: int = 0):
-    output = {}
     position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
     position = await ctx.fetcher.get_position(position_pda, True)
     # print(position)
@@ -303,3 +302,146 @@ async def add_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, deposit_
     print('{:<80}'.format("Build and execute transaction..."))
     signature = await tx.build_and_execute()
     print('{:>20} {}'.format("TX signature:", signature))
+'''
+@func: Harvest fees from a specific position
+'''
+async def harvest_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
+    # get position
+    position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
+    position = await ctx.fetcher.get_position(position_pda, True)
+    whirlpool_pubkey = position.whirlpool
+    # get whirlpool
+    print('{:<80}'.format("Getting whirlpool info..."))        
+    # get whirlpool
+    whirlpool = await ctx.fetcher.get_whirlpool(whirlpool_pubkey)
+    # To log progress status
+    decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals  # SOL_DECIMAL
+    decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals  # USDC_DECIMAL
+    price = PriceMath.sqrt_price_x64_to_price(whirlpool.sqrt_price, decimals_a, decimals_b)
+    print('{:*^80}'.format("Whirlpool"))
+    print('{:>20} {}'.format("whirlpool:", position.whirlpool))
+    print('{:>20} {}'.format("token_mint_a:", whirlpool.token_mint_a))
+    print('{:>20} {}'.format("token_mint_b:", whirlpool.token_mint_b))
+    print('{:>20} {}'.format("tick_spacing:", whirlpool.tick_spacing))
+    print('{:>20} {}'.format("tick_current_index:", whirlpool.tick_current_index))
+    print('{:>20} {}'.format("sqrt_price:", whirlpool.sqrt_price))
+    print('{:>20} {}'.format("price:", DecimalUtil.to_fixed(price, decimals_b)))
+
+    # For building quotes
+    ta_lower_start_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
+    ta_upper_start_index = TickUtil.get_start_tick_index(position.tick_upper_index, whirlpool.tick_spacing)
+    ta_lower_pubkey = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, ta_lower_start_index).pubkey
+    ta_upper_pubkey = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, ta_upper_start_index).pubkey
+    ta_lower = await ctx.fetcher.get_tick_array(ta_lower_pubkey)
+    ta_upper = await ctx.fetcher.get_tick_array(ta_upper_pubkey)
+    tick_lower = TickArrayUtil.get_tick_from_array(ta_lower, position.tick_lower_index, whirlpool.tick_spacing)
+    tick_upper = TickArrayUtil.get_tick_from_array(ta_upper, position.tick_upper_index, whirlpool.tick_spacing)
+
+    position_mint = position.position_mint
+    position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position_mint)
+    print('{:*^80}'.format("Position"))
+    print('{:>20} {}'.format("name:", position.pubkey))
+    print('{:>20} {}'.format("address:", position.position_mint))
+    print('{:>20} {}'.format("liquidity:", position.liquidity))
+    # get ATA (considering WSOL)
+    token_account_a = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_a)
+    token_account_b = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_b)
+    # Build transaction  
+    tx = TransactionBuilder(ctx.connection, ctx.wallet)
+    # add instructions
+    tx.add_instruction(token_account_a.instruction)
+    tx.add_instruction(token_account_b.instruction)
+    
+    # get quote
+    quote = QuoteBuilder.collect_fees(CollectFeesQuoteParams(
+        whirlpool=whirlpool,
+        position=position,
+        tick_lower=tick_lower,
+        tick_upper=tick_upper,
+    ))
+    print('{:*^80}'.format("Quote-Collect"))
+    print('{:>20} {}'.format("fee_a_estimated:", quote.fee_a))
+    print('{:>20} {}'.format("fee_b_estimated:", quote.fee_b))
+
+    collect_fees_ix = WhirlpoolIx.collect_fees(
+        ctx.program_id,
+        CollectFeesParams(
+            whirlpool=whirlpool_pubkey,
+            position_authority=ctx.wallet.pubkey(),
+            position=position_pda,
+            position_token_account=position_ata,
+            token_owner_account_a=token_account_a.pubkey,
+            token_vault_a=whirlpool.token_vault_a,
+            token_owner_account_b=token_account_b.pubkey,
+            token_vault_b=whirlpool.token_vault_b,
+        )
+    )
+    # Add instructions
+    tx.add_instruction(collect_fees_ix)
+
+    # quote rewards
+    quote_rewards = QuoteBuilder.collect_rewards(CollectRewardsQuoteParams(
+        whirlpool=whirlpool,
+        position=position,
+        tick_lower=tick_lower,
+        tick_upper=tick_upper,
+    ))
+
+    print('{:*^80}'.format("Quote-Reward"))
+    print('{:>20} {}'.format("Reward1:", quote_rewards.rewards[0]))
+    print('{:>20} {}'.format("Reward2:", quote_rewards.rewards[1]))
+    print('{:>20} {}'.format("Reward3:", quote_rewards.rewards[2]))
+    # update
+    latest_block_timestamp = await ctx.fetcher.get_latest_block_timestamp()
+    print('{:>20} {}'.format("latest:", latest_block_timestamp))
+    print('{:>20} {}'.format("whirlpool timestamp:", whirlpool.reward_last_updated_timestamp))
+    
+    def is_not_empty(val):
+        if val != None and val != 0: return True
+        return False
+    
+    result = all(is_not_empty(x) for x in quote_rewards.rewards)
+
+    if result is True:
+        quote_rewards2 = QuoteBuilder.collect_rewards(CollectRewardsQuoteParams(
+            whirlpool=whirlpool,
+            position=position,
+            tick_lower=tick_lower,
+            tick_upper=tick_upper,
+            latest_block_timestamp=latest_block_timestamp.timestamp,
+        ))
+        print('{:*^80}'.format("Quote-Reward2"))
+        print('{:>20} {}'.format("Reward1:", quote_rewards2.rewards[0]))
+        print('{:>20} {}'.format("Reward2:", quote_rewards2.rewards[1]))
+        print('{:>20} {}'.format("Reward3:", quote_rewards2.rewards[2]))
+
+        reward_token_mint = whirlpool.reward_infos[0].mint
+        reward_owner_account = TokenUtil.derive_ata(ctx.wallet.pubkey(), reward_token_mint)
+    
+        collect_reward_ix = WhirlpoolIx.collect_reward(
+            ctx.program_id,
+            CollectRewardParams(
+                reward_index=0,
+                whirlpool=whirlpool_pubkey,
+                position_authority=ctx.wallet.pubkey(),
+                position=position_pda,
+                position_token_account=position_ata,
+                reward_owner_account=reward_owner_account,
+                reward_vault=whirlpool.reward_infos[0].vault,
+            )
+        )
+        tx.add_instruction(collect_reward_ix)
+    else:
+        print('{:<80}'.format("There aren't any rewards"))
+    tx.add_signer(ctx.wallet)
+    # Execute transaction
+    print('{:<80}'.format("Building and Executing transactions to collect fees of the position..."))
+    signature = await tx.build_and_execute()
+    print("TX signature", signature)
+
+async def harvest_whirlpool_fees(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey):
+    print("harvest_whirlpool_fees")
+
+async def harvest_wallet_fees(ctx: WhirlpoolContext):
+    print("harvest_wallet_fees")
+
