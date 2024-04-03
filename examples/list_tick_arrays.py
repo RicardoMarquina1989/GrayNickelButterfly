@@ -1,16 +1,12 @@
 import asyncio
-import os
-from dotenv import load_dotenv
+
 from solders.pubkey import Pubkey
 from solana.rpc.async_api import AsyncClient
 
 from orca_whirlpool.accounts import AccountFinder
 from orca_whirlpool.constants import ORCA_WHIRLPOOL_PROGRAM_ID
 
-load_dotenv()
-RPC_ENDPOINT_URL = os.getenv("RPC_ENDPOINT_URL")
-
-
+from constants import RPC_ENDPOINT_URL
 async def main():
     connection = AsyncClient(RPC_ENDPOINT_URL)
 
