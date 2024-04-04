@@ -45,7 +45,6 @@ async def main():
         print('{:>16} {}'.format("whirlpool:", position['whirlpool']))
         print('{:>16} {}'.format("token_a:", position['token_a']))
         print('{:>16} {}'.format("token_b:", position['token_b']))
-        print('{:>16} {}'.format("token_a:", position['token_a']))
         print('{:>16} {}'.format("liquidity:", position['liquidity']))
         print('{:>16} {}'.format("token_amount_a:", position['token_amount_a']))
         print('{:>16} {}'.format("token_amount_b:", position['token_amount_b']))
