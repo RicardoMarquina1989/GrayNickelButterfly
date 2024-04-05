@@ -39,7 +39,7 @@ async def main():
             whirlpool_pubkey = Pubkey.from_string(args.whirlpool_pubkey)
             await harvest_whirlpool_fees(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
     elif args.target == "wallet":
-        harvest_wallet_fees(ctx=ctx)
+        await harvest_wallet_fees(ctx=ctx)
     else:
         parser.error("Invalid target to harvest.")
         

@@ -2,15 +2,15 @@ from decimal import Decimal
 
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
-
+from spl.token.constants import TOKEN_PROGRAM_ID
+from solana.rpc.types import TokenAccountOpts
+from solana.rpc.core import TransactionExpiredBlockheightExceededError
 from orca_whirlpool.types import Percentage
 from orca_whirlpool.context import WhirlpoolContext
-from orca_whirlpool.accounts import AccountFinder
 from orca_whirlpool.instruction import WhirlpoolIx, OpenPositionParams, CollectFeesParams, ClosePositionParams, CollectProtocolFeesParams, CollectRewardParams, DecreaseLiquidityParams, UpdateFeesAndRewardsParams, IncreaseLiquidityParams
 from orca_whirlpool.transaction import TransactionBuilder
 from orca_whirlpool.utils import TokenUtil, TickArrayUtil, DecimalUtil, PriceMath, PositionUtil, PDAUtil, TickUtil, LiquidityMath
 from orca_whirlpool.quote import QuoteBuilder, IncreaseLiquidityQuoteParams, CollectFeesQuoteParams, CollectRewardsQuoteParams
-from orca_whirlpools_py.whirlpools import get_positions_by_whrilpool_pubkey
 
 def rand_pubkey() -> Pubkey:
     return Keypair().pubkey()
@@ -304,30 +304,34 @@ async def add_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, deposit_
     print('{:<80}'.format("Build and execute transaction..."))
     signature = await tx.build_and_execute()
     print('{:>20} {}'.format("TX signature:", signature))
+
 '''
 @func: Harvest fees from a specific position
+@author: 
 '''
 async def harvest_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
     # get position
     position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
     position = await ctx.fetcher.get_position(position_pda, True)
     whirlpool_pubkey = position.whirlpool
-    print('{:<80}'.format("Getting whirlpool info..."))        
     # get whirlpool
-    whirlpool = await ctx.fetcher.get_whirlpool(whirlpool_pubkey)
-    # To log progress status
-    decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals  # SOL_DECIMAL
-    decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals  # USDC_DECIMAL
-    price = PriceMath.sqrt_price_x64_to_price(whirlpool.sqrt_price, decimals_a, decimals_b)
-    print('{:*^80}'.format("Whirlpool"))
-    print('{:>20} {}'.format("whirlpool:", position.whirlpool))
-    print('{:>20} {}'.format("token_mint_a:", whirlpool.token_mint_a))
-    print('{:>20} {}'.format("token_mint_b:", whirlpool.token_mint_b))
-    print('{:>20} {}'.format("tick_spacing:", whirlpool.tick_spacing))
-    print('{:>20} {}'.format("tick_current_index:", whirlpool.tick_current_index))
-    print('{:>20} {}'.format("sqrt_price:", whirlpool.sqrt_price))
-    print('{:>20} {}'.format("price:", DecimalUtil.to_fixed(price, decimals_b)))
+    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+    
+    # Execute transaction
+    print('{:<80}'.format("Building and Executing transactions to collect fees of the position..."))
+    try:
+        await build_execute_collect_fees_reward_transactions(ctx=ctx, position=position, whirlpool=whirlpool)
+    except TransactionExpiredBlockheightExceededError as e:
+        # Handle the specific error
+        print("Transaction expired due to block height exceeded:", e)
+        # Perform any necessary cleanup or retries if needed
+    except Exception as e:
+        # Handle other exceptions
+        print("An unexpected error occurred:", e)
+        # Perform appropriate actions, like logging, retrying, or exiting gracefully
+  
 
+async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, whirlpool, position):
     # For building quotes
     ta_lower_start_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
     ta_upper_start_index = TickUtil.get_start_tick_index(position.tick_upper_index, whirlpool.tick_spacing)
@@ -337,18 +341,23 @@ async def harvest_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
     ta_upper = await ctx.fetcher.get_tick_array(ta_upper_pubkey)
     tick_lower = TickArrayUtil.get_tick_from_array(ta_lower, position.tick_lower_index, whirlpool.tick_spacing)
     tick_upper = TickArrayUtil.get_tick_from_array(ta_upper, position.tick_upper_index, whirlpool.tick_spacing)
-
+    
+    # position info
     position_mint = position.position_mint
     position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position_mint)
+    position_pda = PDAUtil.get_position(ctx.program_id, position_mint).pubkey
     print('{:*^80}'.format("Position"))
     print('{:>20} {}'.format("name:", position.pubkey))
     print('{:>20} {}'.format("address:", position.position_mint))
     print('{:>20} {}'.format("liquidity:", position.liquidity))
+    
     # get ATA (considering WSOL)
     token_account_a = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_a)
     token_account_b = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_b)
+    
     # Build transaction  
     tx = TransactionBuilder(ctx.connection, ctx.wallet)
+
     # add instructions
     tx.add_instruction(token_account_a.instruction)
     tx.add_instruction(token_account_b.instruction)
@@ -367,9 +376,9 @@ async def harvest_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
     collect_fees_ix = WhirlpoolIx.collect_fees(
         ctx.program_id,
         CollectFeesParams(
-            whirlpool=whirlpool_pubkey,
-            position_authority=ctx.wallet.pubkey(),
+            whirlpool=whirlpool.pubkey,
             position=position_pda,
+            position_authority=ctx.wallet.pubkey(),
             position_token_account=position_ata,
             token_owner_account_a=token_account_a.pubkey,
             token_vault_a=whirlpool.token_vault_a,
@@ -423,7 +432,7 @@ async def harvest_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
             ctx.program_id,
             CollectRewardParams(
                 reward_index=0,
-                whirlpool=whirlpool_pubkey,
+                whirlpool=whirlpool.pubkey,
                 position_authority=ctx.wallet.pubkey(),
                 position=position_pda,
                 position_token_account=position_ata,
@@ -434,40 +443,96 @@ async def harvest_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
         tx.add_instruction(collect_reward_ix)
     else:
         print('{:<80}'.format("There aren't any rewards"))
+    
     tx.add_signer(ctx.wallet)
     # Execute transaction
     print('{:<80}'.format("Building and Executing transactions to collect fees of the position..."))
     signature = await tx.build_and_execute()
     print("TX signature", signature)
 
+'''
+@func: Harvest fees and rewards of the whirlpool
+    In other words, it iterates harvesting position by position
+'''
 async def harvest_whirlpool_fees(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey):
-    print("harvest_whirlpool_fees")
-    
-    positions = await get_positions_by_whrilpool_pubkey(
-        ctx.connection,
-        whirlpool_pubkey
+    print("Harvest fees and reward of the positions of the whirlpool")
+    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+
+    # list all token accounts
+    res = await ctx.connection.get_token_accounts_by_owner(
+        ctx.wallet.pubkey(),
+        TokenAccountOpts(program_id=TOKEN_PROGRAM_ID, encoding="base64")
     )
-    print(positions)
-    return
-    print('{:<80}'.format("Getting positions of the whirlpool..."))
-    for position in positions:
-        if position is None:
-            continue
+    token_accounts = res.value
+    
+    for token_account in token_accounts:
+        parsed = TokenUtil.deserialize_account(token_account.account.data)
 
-        print('{:*^80}'.format("Position Info"))        
-        print('{:>16} {}'.format("mint:", position['mint']))
-        print('{:>16} {}'.format("token_account:", position['token_account']))
-        print('{:>16} {}'.format("position_pubkey:", position['position_pubkey']))
-        print('{:>16} {}'.format("whirlpool:", position['whirlpool']))
-        print('{:>16} {}'.format("token_a:", position['token_a']))
-        print('{:>16} {}'.format("token_b:", position['token_b']))
-        print('{:>16} {}'.format("liquidity:", position['liquidity']))
-        print('{:>16} {}'.format("token_amount_a:", position['token_amount_a']))
-        print('{:>16} {}'.format("token_amount_b:", position['token_amount_b']))
-        print('{:>16} {}'.format("status:", position['status']))
-
-        harvest_position_fees(ctx=ctx, position_pubkey=Pubkey.from_string(position['position_pubkey']))
-
+        # maybe NFT
+        if parsed.amount == 1:
+            # derive position address
+            position_pubkey = PDAUtil.get_position(ctx.program_id, parsed.mint).pubkey
+            position = await ctx.fetcher.get_position(position_pubkey)
+            if position.whirlpool == whirlpool_pubkey:
+                try:
+                    await build_execute_collect_fees_reward_transactions(ctx=ctx, position=position, whirlpool=whirlpool)
+                except TransactionExpiredBlockheightExceededError as e:
+                    # Handle the specific error
+                    print("Transaction expired due to block height exceeded:", e)
+                    # Perform any necessary cleanup or retries if needed
+                except Exception as e:
+                    # Handle other exceptions
+                    print("An unexpected error occurred:", e)
+                    # Perform appropriate actions, like logging, retrying, or exiting gracefully
+                
+'''
+@func: Harvest fees and rewars of all positions of wallet. 
+'''
 async def harvest_wallet_fees(ctx: WhirlpoolContext):
-    print("harvest_wallet_fees")
+    # list all token accounts
+    res = await ctx.connection.get_token_accounts_by_owner(
+        ctx.wallet.pubkey(),
+        TokenAccountOpts(program_id=TOKEN_PROGRAM_ID, encoding="base64")
+    )
 
+    token_accounts = res.value
+    whirlpool_pubkeys = []
+    for token_account in token_accounts:
+        parsed = TokenUtil.deserialize_account(token_account.account.data)
+
+        # maybe NFT
+        if parsed.amount == 1:
+            # derive position address
+            position_pubkey = PDAUtil.get_position(ctx.program_id, parsed.mint).pubkey
+            position = await ctx.fetcher.get_position(position_pubkey)
+            whirlpool_pubkeys.append(position.whirlpool)
+
+    unique_whirlpool_pubkeys = list(set(whirlpool_pubkeys))
+    if len(unique_whirlpool_pubkeys) > 0:
+        print("Harvesting fees and rewards whirlpool by whirlpool")
+        for whirlpool_pubkey in unique_whirlpool_pubkeys:
+            await harvest_whirlpool_fees(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+
+'''
+Getting whirlpool and show the full info.
+'''
+async def get_whirlpool_and_show_info(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey):
+    # get whirlpool
+    print('{:<80}'.format("Getting whirlpool info..."))
+    whirlpool = await ctx.fetcher.get_whirlpool(whirlpool_pubkey)
+    if whirlpool is None:
+        return
+    # To log progress status
+    decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals  # SOL_DECIMAL
+    decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals  # USDC_DECIMAL
+    price = PriceMath.sqrt_price_x64_to_price(whirlpool.sqrt_price, decimals_a, decimals_b)
+    print('{:*^80}'.format("Whirlpool"))
+    print('{:>20} {}'.format("whirlpool:", whirlpool.pubkey))
+    print('{:>20} {}'.format("token_mint_a:", whirlpool.token_mint_a))
+    print('{:>20} {}'.format("token_mint_b:", whirlpool.token_mint_b))
+    print('{:>20} {}'.format("tick_spacing:", whirlpool.tick_spacing))
+    print('{:>20} {}'.format("tick_current_index:", whirlpool.tick_current_index))
+    print('{:>20} {}'.format("sqrt_price:", whirlpool.sqrt_price))
+    print('{:>20} {}'.format("price:", DecimalUtil.to_fixed(price, decimals_b)))
+
+    return whirlpool
