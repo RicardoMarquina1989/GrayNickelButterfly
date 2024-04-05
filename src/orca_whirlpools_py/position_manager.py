@@ -536,3 +536,142 @@ async def get_whirlpool_and_show_info(ctx: WhirlpoolContext, whirlpool_pubkey: P
     print('{:>20} {}'.format("price:", DecimalUtil.to_fixed(price, decimals_b)))
 
     return whirlpool
+
+'''
+@func: Check fees and rewards of a specific position
+'''
+async def check_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
+    # get position
+    position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
+    position = await ctx.fetcher.get_position(position_pda, True)
+    whirlpool_pubkey = position.whirlpool
+    # get whirlpool
+    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+    
+    # Execute transaction
+    print('{:<80}'.format("Checking fees and rewards of the position..."))
+    await check_fees_rewards_of_position(ctx=ctx, position=position, whirlpool=whirlpool)
+
+'''
+@func: Check fees and rewards of position-only 
+@caller: check_position_fees
+'''
+async def check_fees_rewards_of_position(ctx: WhirlpoolContext, whirlpool, position):
+    # For building quotes
+    ta_lower_start_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
+    ta_upper_start_index = TickUtil.get_start_tick_index(position.tick_upper_index, whirlpool.tick_spacing)
+    ta_lower_pubkey = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, ta_lower_start_index).pubkey
+    ta_upper_pubkey = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, ta_upper_start_index).pubkey
+    ta_lower = await ctx.fetcher.get_tick_array(ta_lower_pubkey)
+    ta_upper = await ctx.fetcher.get_tick_array(ta_upper_pubkey)
+    tick_lower = TickArrayUtil.get_tick_from_array(ta_lower, position.tick_lower_index, whirlpool.tick_spacing)
+    tick_upper = TickArrayUtil.get_tick_from_array(ta_upper, position.tick_upper_index, whirlpool.tick_spacing)
+    
+    # position info
+    print('{:*^80}'.format("Position"))
+    print('{:>20} {}'.format("name:", position.pubkey))
+    print('{:>20} {}'.format("address:", position.position_mint))
+    print('{:>20} {}'.format("liquidity:", position.liquidity))
+    
+   # get quote
+    quote = QuoteBuilder.collect_fees(CollectFeesQuoteParams(
+        whirlpool=whirlpool,
+        position=position,
+        tick_lower=tick_lower,
+        tick_upper=tick_upper,
+    ))
+    print('{:*^80}'.format("Quote-Collect"))
+    print('{:>20} {}'.format("fee_a_estimated:", quote.fee_a))
+    print('{:>20} {}'.format("fee_b_estimated:", quote.fee_b))
+
+    # quote rewards
+    quote_rewards = QuoteBuilder.collect_rewards(CollectRewardsQuoteParams(
+        whirlpool=whirlpool,
+        position=position,
+        tick_lower=tick_lower,
+        tick_upper=tick_upper,
+    ))
+
+    print('{:*^80}'.format("Quote-Reward"))
+    print('{:>20} {}'.format("Reward1:", quote_rewards.rewards[0]))
+    print('{:>20} {}'.format("Reward2:", quote_rewards.rewards[1]))
+    print('{:>20} {}'.format("Reward3:", quote_rewards.rewards[2]))
+    # update
+    latest_block_timestamp = await ctx.fetcher.get_latest_block_timestamp()
+    print('{:>20} {}'.format("latest:", latest_block_timestamp))
+    print('{:>20} {}'.format("whirlpool timestamp:", whirlpool.reward_last_updated_timestamp))
+    
+    def is_not_empty(val):
+        if val != None and val != 0: return True
+        return False
+    
+    result = all(is_not_empty(x) for x in quote_rewards.rewards)
+
+    if result is True:
+        quote_rewards2 = QuoteBuilder.collect_rewards(CollectRewardsQuoteParams(
+            whirlpool=whirlpool,
+            position=position,
+            tick_lower=tick_lower,
+            tick_upper=tick_upper,
+            latest_block_timestamp=latest_block_timestamp.timestamp,
+        ))
+        print('{:*^80}'.format("Quote-Reward2"))
+        print('{:>20} {}'.format("Reward1:", quote_rewards2.rewards[0]))
+        print('{:>20} {}'.format("Reward2:", quote_rewards2.rewards[1]))
+        print('{:>20} {}'.format("Reward3:", quote_rewards2.rewards[2]))
+    else:
+        print('{:<80}'.format("There aren't any rewards"))
+
+'''
+@func: Check fees and rewards of the whirlpool
+    In other words, it iterates checking position by position
+'''
+async def check_whirlpool_fees(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey):
+    print("Check fees and reward of the positions of the whirlpool")
+    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+
+    # list all token accounts
+    res = await ctx.connection.get_token_accounts_by_owner(
+        ctx.wallet.pubkey(),
+        TokenAccountOpts(program_id=TOKEN_PROGRAM_ID, encoding="base64")
+    )
+    token_accounts = res.value
+    
+    for token_account in token_accounts:
+        parsed = TokenUtil.deserialize_account(token_account.account.data)
+
+        # maybe NFT
+        if parsed.amount == 1:
+            # derive position address
+            position_pubkey = PDAUtil.get_position(ctx.program_id, parsed.mint).pubkey
+            position = await ctx.fetcher.get_position(position_pubkey)
+            if position.whirlpool == whirlpool_pubkey:
+                await check_fees_rewards_of_position(ctx=ctx, position=position, whirlpool=whirlpool)
+                
+'''
+@func: Check fees and rewars of all positions of wallet. 
+'''
+async def check_wallet_fees(ctx: WhirlpoolContext):
+    # list all token accounts
+    res = await ctx.connection.get_token_accounts_by_owner(
+        ctx.wallet.pubkey(),
+        TokenAccountOpts(program_id=TOKEN_PROGRAM_ID, encoding="base64")
+    )
+
+    token_accounts = res.value
+    whirlpool_pubkeys = []
+    for token_account in token_accounts:
+        parsed = TokenUtil.deserialize_account(token_account.account.data)
+
+        # maybe NFT
+        if parsed.amount == 1:
+            # derive position address
+            position_pubkey = PDAUtil.get_position(ctx.program_id, parsed.mint).pubkey
+            position = await ctx.fetcher.get_position(position_pubkey)
+            whirlpool_pubkeys.append(position.whirlpool)
+
+    unique_whirlpool_pubkeys = list(set(whirlpool_pubkeys))
+    if len(unique_whirlpool_pubkeys) > 0:
+        print("Checking fees and rewards of the whirlpool by whirlpool")
+        for whirlpool_pubkey in unique_whirlpool_pubkeys:
+            await check_whirlpool_fees(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)

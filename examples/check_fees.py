@@ -1,0 +1,45 @@
+import argparse
+import asyncio
+
+from solders.pubkey import Pubkey
+
+from orca_whirlpools_py.position_manager import check_position_fees, check_whirlpool_fees, check_wallet_fees
+from utils import get_context
+
+'''
+@func: Check fees of the targeted ones.
+@Command sample
+    - To check fees of a specific position
+    python check_fees.py position -P 5ebE8hm4g2scC7w7KQGP8z22hMDdkShWVCgE3MHBFSLE
+    - To check fees of a specific whirlpool
+    python check_fees.py whirlpool -W HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
+    - To check fees of all my own positions of wallet
+    python check_fees.py wallet
+'''
+async def main():
+    parser = argparse.ArgumentParser(description="Check fees of the targeted ones.")
+    parser.add_argument("target", choices=["position", "whirlpool", "wallet"], help="Determine to check fees and rewards of whether position or whirlpool or your own wallet")
+    parser.add_argument("-P", "--position_pubkey", help="Position public key")
+    parser.add_argument("-W", "--whirlpool_pubkey", help="Whirlpool public key")
+    args = parser.parse_args()
+
+    ctx = get_context()
+    
+    if args.target == "position":
+        if args.position_pubkey is None:
+            parser.error("To check fees of a position, position_pubkey parameter is required.")
+        else:
+            position_pubkey = Pubkey.from_string(args.position_pubkey)
+            await check_position_fees(ctx=ctx, position_pubkey=position_pubkey)
+    elif args.target == "whirlpool":
+        if args.whirlpool_pubkey is None:
+            parser.error("To check fees of a whirlpool, whirlpool_pubkey parameter is required.")
+        else:
+            whirlpool_pubkey = Pubkey.from_string(args.whirlpool_pubkey)
+            await check_whirlpool_fees(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+    elif args.target == "wallet":
+        await check_wallet_fees(ctx=ctx)
+    else:
+        parser.error("Invalid target to check.")
+        
+asyncio.run(main())
