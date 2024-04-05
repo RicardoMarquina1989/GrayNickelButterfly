@@ -102,7 +102,7 @@ class PositionRelatedAccounts(NamedTuple):
     token_account: Pubkey
     position: Pubkey
 
-async def get_positions_by_whrilpool_pubkey(connection: AsyncClient, wallet_pubkey: Pubkey):
+async def get_positions_by_wallet_pubkey(connection: AsyncClient, wallet_pubkey: Pubkey):
 
     ctx = WhirlpoolContext(ORCA_WHIRLPOOL_PROGRAM_ID, connection, Keypair())
 

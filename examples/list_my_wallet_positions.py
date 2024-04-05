@@ -1,16 +1,12 @@
 import argparse
 import asyncio
-import json
-import sys
 from typing import NamedTuple
-from pathlib import Path
 
 from solana.rpc.async_api import AsyncClient
 from solders.pubkey import Pubkey
-from solders.keypair import Keypair
 
 from constants import *
-from orca_whirlpools_py.whirlpools import get_positions_by_whrilpool_pubkey
+from orca_whirlpools_py.whirlpools import get_positions_by_wallet_pubkey
 
 class PositionRelatedAccounts(NamedTuple):
     mint: Pubkey
@@ -22,18 +18,17 @@ This script is useful for getting only positions that are belogned to your walle
 '''
 async def main():
     parser = argparse.ArgumentParser(description="Get positions that are belonged to your wallet.")
-    parser.add_argument("wallet_pubkey", help="Wallet Public Key")
+    parser.add_argument('-W', "--wallet_pubkey", help="Wallet Public Key")
     args = parser.parse_args()
 
     if args.wallet_pubkey is None:
         parser.error("Invalid wallet public key")
-        sys.exit(1)
     
     connection = AsyncClient(RPC_ENDPOINT_URL)
     # wallet_pubkey = Pubkey.from_string("93jK1URnVqR9j5CLfiEuJEN3jtKkr5dtqcs1PuLpsYAJ")
     wallet_pubkey = Pubkey.from_string(args.wallet_pubkey)
     print(f"wallet pubkey {wallet_pubkey}")
-    positions = await get_positions_by_whrilpool_pubkey(connection=connection, wallet_pubkey=wallet_pubkey)
+    positions = await get_positions_by_wallet_pubkey(connection=connection, wallet_pubkey=wallet_pubkey)
     for position in positions:
         if position is None:
             continue

@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import sys
 
 from solders.pubkey import Pubkey
 
@@ -11,11 +10,11 @@ from utils import get_context
 @func: Collect fees from a position or a whirlpool.
 @Command sample
     - To harvest fees from a specific position
-    python harvest_fees.py -P 5ebE8hm4g2scC7w7KQGP8z22hMDdkShWVCgE3MHBFSLE
+    python harvest_fees.py position -P 5ebE8hm4g2scC7w7KQGP8z22hMDdkShWVCgE3MHBFSLE
     - To harvest fees from a specific whirlpool
-    python harvest_fees.py -W HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
+    python harvest_fees.py whirlpool -W HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ
     - To harvest fees from all my own positions of wallet
-    python harvest_fees.py
+    python harvest_fees.py wallet
 '''
 async def main():
     parser = argparse.ArgumentParser(description="Open a position in the specific whirlpool.")
@@ -27,19 +26,19 @@ async def main():
 
     ctx = get_context()
     
-    if args.operation == "position":
+    if args.target == "position":
         if args.position_pubkey is None:
             parser.error("To harvest fees from a position, position_pubkey parameter is required.")
         else:
             position_pubkey = Pubkey.from_string(args.position_pubkey)
             await harvest_position_fees(ctx=ctx, position_pubkey=position_pubkey)
-    elif args.operation == "whirlpool":
+    elif args.target == "whirlpool":
         if args.whirlpool_pubkey is None:
             parser.error("To harvest fees from a whirlpool, whirlpool_pubkey parameter is required.")
         else:
             whirlpool_pubkey = Pubkey.from_string(args.whirlpool_pubkey)
             await harvest_whirlpool_fees(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
-    elif args.operation == "wallet":
+    elif args.target == "wallet":
         harvest_wallet_fees(ctx=ctx)
     else:
         parser.error("Invalid target to harvest.")

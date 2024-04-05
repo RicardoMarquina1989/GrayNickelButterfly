@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import sys
 
 from orca_whirlpools_py.position_manager import open_position_only
 from constants import SOL_USDC_WHIRLPOOL_PUBKEY
@@ -20,7 +19,6 @@ async def main():
 
     if args.upper is None or args.lower is None:
         parser.error("Invalid input parameters. Please check upper, lower value.")
-        sys.exit(1)
     
     ctx = get_context()
     await open_position_only(ctx=ctx, whirlpool_pubkey=SOL_USDC_WHIRLPOOL_PUBKEY, upper=args.upper, lower=args.lower)

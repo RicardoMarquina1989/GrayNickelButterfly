@@ -5,10 +5,12 @@ from solders.pubkey import Pubkey
 
 from orca_whirlpool.types import Percentage
 from orca_whirlpool.context import WhirlpoolContext
+from orca_whirlpool.accounts import AccountFinder
 from orca_whirlpool.instruction import WhirlpoolIx, OpenPositionParams, CollectFeesParams, ClosePositionParams, CollectProtocolFeesParams, CollectRewardParams, DecreaseLiquidityParams, UpdateFeesAndRewardsParams, IncreaseLiquidityParams
 from orca_whirlpool.transaction import TransactionBuilder
 from orca_whirlpool.utils import TokenUtil, TickArrayUtil, DecimalUtil, PriceMath, PositionUtil, PDAUtil, TickUtil, LiquidityMath
 from orca_whirlpool.quote import QuoteBuilder, IncreaseLiquidityQuoteParams, CollectFeesQuoteParams, CollectRewardsQuoteParams
+from orca_whirlpools_py.whirlpools import get_positions_by_whrilpool_pubkey
 
 def rand_pubkey() -> Pubkey:
     return Keypair().pubkey()
@@ -310,7 +312,6 @@ async def harvest_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
     position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
     position = await ctx.fetcher.get_position(position_pda, True)
     whirlpool_pubkey = position.whirlpool
-    # get whirlpool
     print('{:<80}'.format("Getting whirlpool info..."))        
     # get whirlpool
     whirlpool = await ctx.fetcher.get_whirlpool(whirlpool_pubkey)
@@ -441,6 +442,31 @@ async def harvest_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
 
 async def harvest_whirlpool_fees(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey):
     print("harvest_whirlpool_fees")
+    
+    positions = await get_positions_by_whrilpool_pubkey(
+        ctx.connection,
+        whirlpool_pubkey
+    )
+    print(positions)
+    return
+    print('{:<80}'.format("Getting positions of the whirlpool..."))
+    for position in positions:
+        if position is None:
+            continue
+
+        print('{:*^80}'.format("Position Info"))        
+        print('{:>16} {}'.format("mint:", position['mint']))
+        print('{:>16} {}'.format("token_account:", position['token_account']))
+        print('{:>16} {}'.format("position_pubkey:", position['position_pubkey']))
+        print('{:>16} {}'.format("whirlpool:", position['whirlpool']))
+        print('{:>16} {}'.format("token_a:", position['token_a']))
+        print('{:>16} {}'.format("token_b:", position['token_b']))
+        print('{:>16} {}'.format("liquidity:", position['liquidity']))
+        print('{:>16} {}'.format("token_amount_a:", position['token_amount_a']))
+        print('{:>16} {}'.format("token_amount_b:", position['token_amount_b']))
+        print('{:>16} {}'.format("status:", position['status']))
+
+        harvest_position_fees(ctx=ctx, position_pubkey=Pubkey.from_string(position['position_pubkey']))
 
 async def harvest_wallet_fees(ctx: WhirlpoolContext):
     print("harvest_wallet_fees")

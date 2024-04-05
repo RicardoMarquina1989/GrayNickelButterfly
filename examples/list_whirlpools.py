@@ -1,8 +1,6 @@
 import asyncio
-from decimal import Decimal
 
 from orca_whirlpools_py.whirlpools import find_whirlpools
-from orca_whirlpool.utils import DecimalUtil
 async def main():
     # get all whirlpools
     # The result are equivalent with when you access to https://www.orca.so/pools?mintvl=0

@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import sys
 
 from solders.pubkey import Pubkey
 
@@ -21,7 +20,6 @@ async def main():
 
     if args.position_pubkey is None or args.deposit_amount is None :
         parser.error("Invalid input parameters. Please check position_pubkey and deposit_amount value.")
-        sys.exit(1)
     
     ctx = get_context()
     position_pubkey = Pubkey.from_string(args.position_pubkey)

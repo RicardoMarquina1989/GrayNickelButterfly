@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import sys
 
 from solders.pubkey import Pubkey
 
@@ -24,7 +23,6 @@ async def main():
 
     if args.upper is None or args.lower is None or args.deposit_amount is None :
         parser.error("Invalid input parameters. Please check upper, lower, and deposit_amount value.")
-        sys.exit(1)
     
     ctx = get_context()
     whirlpool_pubkey = Pubkey.from_string(args.whirlpool_pubkey)
