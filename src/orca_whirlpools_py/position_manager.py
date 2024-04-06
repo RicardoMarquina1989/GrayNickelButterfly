@@ -1,3 +1,4 @@
+import random
 from decimal import Decimal
 
 from solders.keypair import Keypair
@@ -10,7 +11,7 @@ from orca_whirlpool.context import WhirlpoolContext
 from orca_whirlpool.instruction import WhirlpoolIx, OpenPositionParams, CollectFeesParams, ClosePositionParams, CollectProtocolFeesParams, CollectRewardParams, DecreaseLiquidityParams, UpdateFeesAndRewardsParams, IncreaseLiquidityParams
 from orca_whirlpool.transaction import TransactionBuilder
 from orca_whirlpool.utils import TokenUtil, TickArrayUtil, DecimalUtil, PriceMath, PositionUtil, PDAUtil, TickUtil, LiquidityMath
-from orca_whirlpool.quote import QuoteBuilder, IncreaseLiquidityQuoteParams, CollectFeesQuoteParams, CollectRewardsQuoteParams
+from orca_whirlpool.quote import QuoteBuilder, IncreaseLiquidityQuoteParams, DecreaseLiquidityQuoteParams, CollectFeesQuoteParams, CollectRewardsQuoteParams
 
 def rand_pubkey() -> Pubkey:
     return Keypair().pubkey()
@@ -361,7 +362,28 @@ async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, 
     # add instructions
     tx.add_instruction(token_account_a.instruction)
     tx.add_instruction(token_account_b.instruction)
-    
+
+    tick_array_lower_start_tick_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
+    tick_array_upper_start_tick_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
+    tick_array_lower = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_lower_start_tick_index).pubkey
+    tick_array_upper = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_upper_start_tick_index).pubkey
+    update_fees_and_rewards_ix = WhirlpoolIx.update_fees_and_rewards(
+        ctx.program_id,
+        UpdateFeesAndRewardsParams(
+            whirlpool=position.whirlpool,
+            position=position_pda,
+            tick_array_lower=tick_array_lower,
+            tick_array_upper=tick_array_upper,
+        )
+    )
+    # Build transaction
+    # tx = TransactionBuilder(ctx.connection, ctx.wallet)
+    tx.add_instruction(update_fees_and_rewards_ix)    
+    # tx.add_signer(ctx.wallet)
+    # Execute transaction
+    # signature = await tx.build_and_execute()
+    # print("TX signature", signature)
+
     # get quote
     quote = QuoteBuilder.collect_fees(CollectFeesQuoteParams(
         whirlpool=whirlpool,
@@ -675,3 +697,111 @@ async def check_wallet_fees(ctx: WhirlpoolContext):
         print("Checking fees and rewards of the whirlpool by whirlpool")
         for whirlpool_pubkey in unique_whirlpool_pubkeys:
             await check_whirlpool_fees(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+
+"""
+@func: Close a position.
+"""
+async def close_position(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippage:int=30, priority_fee: int = 0):
+    print("Closing the position...")
+    # call functions one by one to close the position
+    whirlpool, position = await withdraw_liquidity(ctx=ctx, position_pubkey=position_pubkey, slippage=slippage, priority_fee=priority_fee)
+    # collect fees and rewards
+    # build_execute_collect_fees_reward_transactions(ctx, whirlpool=whirlpool, position=position)
+    
+    # position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
+    # position = await ctx.fetcher.get_position(position_pda, True)
+    # position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position.position_mint)
+    # ctx.fetcher.get_latest_block_timestamp
+    
+    # close_position_ix = WhirlpoolIx.close_position(
+    #     ctx.program_id,
+    #     ClosePositionParams(
+    #         position_authority=ctx.wallet.pubkey(),
+    #         receiver=ctx.wallet.pubkey(),
+    #         position=position_pubkey,
+    #         position_mint=position.position_mint,
+    #         position_token_account=Pubkey.from_string("HXaE8N9HCQZdAqie8xq5rVsCTm9atDSB7auASqmAxmMV"),
+    #         position_token_account=position_ata,
+    #     )
+    # )
+
+    # # build transaction
+    # tx = TransactionBuilder(ctx.connection, ctx.wallet)
+    # tx.add_instruction(close_position_ix)
+    # tx.add_signer(ctx.wallet)
+    # # Execute transaction
+    # signature = await tx.build_and_execute()
+    # print("TX signature", signature)
+
+'''
+Decrease liquidity
+'''
+async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippage:int=30, priority_fee: int = 0):
+    
+    position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
+    position = await ctx.fetcher.get_position(position_pda, True)
+    position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position_pubkey)
+    
+    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=position.whirlpool)
+    token_account_a = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_a)
+    token_account_b = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_b)
+    
+    tick_array_lower_start_tick_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
+    tick_array_upper_start_tick_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
+    tick_array_lower = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_lower_start_tick_index).pubkey
+    tick_array_upper = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_upper_start_tick_index).pubkey
+    acceptable_slippage = Percentage.from_fraction(int(slippage), 100)
+    
+    liquidity_amount = random.randint(0, 2**128-1)
+    # get quote
+    quote = QuoteBuilder.decrease_liquidity_by_liquidity(DecreaseLiquidityQuoteParams(
+        liquidity=position.liquidity,
+        # liquidity=liquidity_amount,
+        sqrt_price=whirlpool.sqrt_price,
+        tick_current_index=whirlpool.tick_current_index,
+        tick_lower_index=position.tick_lower_index,
+        tick_upper_index=position.tick_upper_index,
+        slippage_tolerance=acceptable_slippage
+    ))
+    print("liquidity", quote.liquidity)
+    print("est_token_a", quote.token_est_a)
+    print("est_token_b", quote.token_est_b)
+    print("min_token_a", quote.token_min_a)
+    print("min_token_a", quote.token_min_b)
+    
+    # token_owner_account_a = TokenUtil.derive_ata(ctx.wallet.pubkey(), whirlpool.token_mint_a)
+    # token_owner_account_b = TokenUtil.derive_ata(ctx.wallet.pubkey(), whirlpool.token_mint_b)
+    
+    # get ATA (considering WSOL)
+    # token_account_a = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_a)
+    # token_account_b = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_b)
+
+    decrease_liquidity_ix = WhirlpoolIx.decrease_liquidity(
+        ctx.program_id,
+        DecreaseLiquidityParams(
+            liquidity_amount=position.liquidity,
+            token_min_a=quote.token_min_a,
+            token_min_b=quote.token_min_b,
+            whirlpool=position.whirlpool,
+            position_authority=ctx.wallet.pubkey(),
+            position=position_pda,
+            position_token_account=position_ata,
+            token_owner_account_a=token_account_a.pubkey,
+            token_owner_account_b=token_account_b.pubkey,
+            token_vault_a=whirlpool.token_vault_a,
+            token_vault_b=whirlpool.token_vault_b,
+            tick_array_lower=tick_array_lower,
+            tick_array_upper=tick_array_upper,
+        )
+    )
+    tx = TransactionBuilder(ctx.connection, ctx.wallet)
+    tx.add_instruction(token_account_a.instruction)
+    tx.add_instruction(token_account_b.instruction)
+    tx.add_instruction(decrease_liquidity_ix)
+    tx.add_signer(ctx.wallet)
+
+    # Execute transaction
+    signature = await tx.build_and_execute()
+    print("TX signature", signature)
+
+    return (whirlpool, position)
