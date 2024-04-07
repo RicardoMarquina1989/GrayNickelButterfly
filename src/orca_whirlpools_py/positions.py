@@ -33,11 +33,18 @@ async def find_positions(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey):
 
     # Sending a GET request to the API
     response = requests.get(url)
+    # get whirlpool
+    # whirlpool = await ctx.fetcher.get_whirlpool(whirlpool_pubkey)
+    # decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals  # SOL_DECIMAL
+    # decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals  # USDC_DECIMAL
+    # get token name
 
     # Checking if the request was successful (status code 200)
     if response.status_code == 200:
         # Parsing the JSON response
         data = response.json()
+        print(data)
+        return
         tokens = []
         for token in data["tokens"]:
             tokens.append({
