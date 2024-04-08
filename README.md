@@ -85,6 +85,10 @@ Users of the SDK can reduce position NFT related fees by using openPosition with
 - collect fees
 - trasfer rewars to owner wallet
 
+## [User guide](./docs/User_guide.md)
+
+## [Developer guide](./docs/Developer_guide.md)
+
 ## Dependencies
 This library have been tested in the following environment.
 
