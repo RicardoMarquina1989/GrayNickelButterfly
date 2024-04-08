@@ -25,23 +25,17 @@ def rand_pubkey() -> Pubkey:
 """
 async def open_position(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey, 
                         upper: float, lower: float, deposit_amount: float,
-                        slippage:int=30, priority_fee: int = 0):
+                        slippage:float=0.3, priority_fee: int = 0):
     
     # get whirlpool
-    whirlpool = await ctx.fetcher.get_whirlpool(whirlpool_pubkey)
+    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
     decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals  # SOL_DECIMAL
     decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals  # USDC_DECIMAL
-    print("whirlpool token_mint_a", whirlpool.token_mint_a)
-    print("whirlpool token_mint_b", whirlpool.token_mint_b)
-    print("whirlpool tick_spacing", whirlpool.tick_spacing)
-    print("whirlpool tick_current_index", whirlpool.tick_current_index)
-    print("whirlpool sqrt_price", whirlpool.sqrt_price)
-    price = PriceMath.sqrt_price_x64_to_price(whirlpool.sqrt_price, decimals_a, decimals_b)
-    print("whirlpool price", DecimalUtil.to_fixed(price, decimals_b))
 
     # input
     input_token = whirlpool.token_mint_b  # USDC
     input_amount = DecimalUtil.to_u64(Decimal(deposit_amount), decimals_b)  # USDC
+    slippage *= 100
     acceptable_slippage = Percentage.from_fraction(int(slippage), 100)
     # price_lower = price / 2
     # price_upper = price * 2
@@ -189,10 +183,10 @@ async def open_position_only(ctx:WhirlpoolContext, whirlpool_pubkey: Pubkey, upp
 @param:     int                 priority_fee unit-lamport
 @return:    
 """
-async def add_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, deposit_amount: float, slippage:int=30, priority_fee: int = 0):
+async def add_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, deposit_amount: float, slippage:float=0.3, priority_fee: int = 0):
+
     position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
     position = await ctx.fetcher.get_position(position_pda, True)
-    # print(position)
     whirlpool_pubkey = position.whirlpool
     # get whirlpool
     print('{:<80}'.format("Getting whirlpool info..."))        
@@ -234,6 +228,7 @@ async def add_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, deposit_
     # input
     input_token = whirlpool.token_mint_b  # USDC
     input_amount = DecimalUtil.to_u64(Decimal(deposit_amount), decimals_b)  # USDC
+    slippage *= 100
     acceptable_slippage = Percentage.from_fraction(int(slippage), 100)
     # price_lower = price / 2
     # price_upper = price * 2
@@ -364,7 +359,7 @@ async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, 
     tx.add_instruction(token_account_b.instruction)
 
     tick_array_lower_start_tick_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
-    tick_array_upper_start_tick_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
+    tick_array_upper_start_tick_index = TickUtil.get_start_tick_index(position.tick_upper_index, whirlpool.tick_spacing)
     tick_array_lower = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_lower_start_tick_index).pubkey
     tick_array_upper = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_upper_start_tick_index).pubkey
     update_fees_and_rewards_ix = WhirlpoolIx.update_fees_and_rewards(
@@ -703,40 +698,38 @@ async def check_wallet_fees(ctx: WhirlpoolContext):
 """
 async def close_position(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippage:int=30, priority_fee: int = 0):
     print("Closing the position...")
-    # call functions one by one to close the position
     whirlpool, position = await withdraw_liquidity(ctx=ctx, position_pubkey=position_pubkey, slippage=slippage, priority_fee=priority_fee)
     # collect fees and rewards
-    # build_execute_collect_fees_reward_transactions(ctx, whirlpool=whirlpool, position=position)
+    await build_execute_collect_fees_reward_transactions(ctx, whirlpool=whirlpool, position=position)
     
-    # position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
-    # position = await ctx.fetcher.get_position(position_pda, True)
-    # position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position.position_mint)
-    # ctx.fetcher.get_latest_block_timestamp
+    position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
+    position = await ctx.fetcher.get_position(position_pda, True)
+    position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position.position_mint)
+    ctx.fetcher.get_latest_block_timestamp
     
-    # close_position_ix = WhirlpoolIx.close_position(
-    #     ctx.program_id,
-    #     ClosePositionParams(
-    #         position_authority=ctx.wallet.pubkey(),
-    #         receiver=ctx.wallet.pubkey(),
-    #         position=position_pubkey,
-    #         position_mint=position.position_mint,
-    #         position_token_account=Pubkey.from_string("HXaE8N9HCQZdAqie8xq5rVsCTm9atDSB7auASqmAxmMV"),
-    #         position_token_account=position_ata,
-    #     )
-    # )
+    close_position_ix = WhirlpoolIx.close_position(
+        ctx.program_id,
+        ClosePositionParams(
+            position_authority=ctx.wallet.pubkey(),
+            receiver=ctx.wallet.pubkey(),
+            position=position_pda,
+            position_mint=position.position_mint,
+            position_token_account=position_ata,
+        )
+    )
 
-    # # build transaction
-    # tx = TransactionBuilder(ctx.connection, ctx.wallet)
-    # tx.add_instruction(close_position_ix)
-    # tx.add_signer(ctx.wallet)
-    # # Execute transaction
-    # signature = await tx.build_and_execute()
-    # print("TX signature", signature)
+    # build transaction
+    tx = TransactionBuilder(ctx.connection, ctx.wallet)
+    tx.add_instruction(close_position_ix)
+    tx.add_signer(ctx.wallet)
+    # Execute transaction
+    signature = await tx.build_and_execute()
+    print("TX signature", signature)
 
 '''
 Decrease liquidity
 '''
-async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippage:int=30, priority_fee: int = 0):
+async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippage:float=0.3, priority_fee: int = 0):
     
     position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
     position = await ctx.fetcher.get_position(position_pda, True)
@@ -747,16 +740,15 @@ async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, sli
     token_account_b = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_b)
     
     tick_array_lower_start_tick_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
-    tick_array_upper_start_tick_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
+    tick_array_upper_start_tick_index = TickUtil.get_start_tick_index(position.tick_upper_index, whirlpool.tick_spacing)
     tick_array_lower = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_lower_start_tick_index).pubkey
     tick_array_upper = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_upper_start_tick_index).pubkey
+    slippage *= 100
     acceptable_slippage = Percentage.from_fraction(int(slippage), 100)
     
-    liquidity_amount = random.randint(0, 2**128-1)
     # get quote
     quote = QuoteBuilder.decrease_liquidity_by_liquidity(DecreaseLiquidityQuoteParams(
         liquidity=position.liquidity,
-        # liquidity=liquidity_amount,
         sqrt_price=whirlpool.sqrt_price,
         tick_current_index=whirlpool.tick_current_index,
         tick_lower_index=position.tick_lower_index,
@@ -769,13 +761,6 @@ async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, sli
     print("min_token_a", quote.token_min_a)
     print("min_token_a", quote.token_min_b)
     
-    # token_owner_account_a = TokenUtil.derive_ata(ctx.wallet.pubkey(), whirlpool.token_mint_a)
-    # token_owner_account_b = TokenUtil.derive_ata(ctx.wallet.pubkey(), whirlpool.token_mint_b)
-    
-    # get ATA (considering WSOL)
-    # token_account_a = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_a)
-    # token_account_b = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_b)
-
     decrease_liquidity_ix = WhirlpoolIx.decrease_liquidity(
         ctx.program_id,
         DecreaseLiquidityParams(
@@ -801,6 +786,7 @@ async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, sli
     tx.add_signer(ctx.wallet)
 
     # Execute transaction
+    print("Executing withraw transaction...")
     signature = await tx.build_and_execute()
     print("TX signature", signature)
 
