@@ -152,21 +152,20 @@ A core library to interact with Orca Whirlpool
 - We will use whirlpool_essentials.py as the default library.
 
 ## Development History-For Maintainers
+
 - [Developer guide](./Developer_guide.md)
-- [Feedback_MS2](./Feedback_MS2.md)
-- [Rpc URL](./rpc.md)
-- [Project Progress board](./WeekendReport.md)
 
 ## User guide-For terminal tool Users
 
 - [ORCA Script CLI](./User_guide.md)
+
 Notes:
 
 - Replace [options] with the appropriate options for each command. 
-All commands support both long and short option formats.
-    Ensure that you have the necessary permissions and tokens required for performing the operations.
-    For more details on each command and its options, use the --help option with the command (e.g., orca open-position --help).
-    Now you're ready to use the ORCA Script CLI to manage your DeFi positions efficiently from the terminal! If you encounter any issues or need further assistance, refer to the documentation or contact the ORCA support team.
+- All commands support both long and short option formats.
+- Ensure that you have the necessary permissions and tokens required for performing the operations.
+- For more details on each command and its options, use the --help option with the command (e.g., orca open-position --help).
+- Now you're ready to use the ORCA Script CLI to manage your DeFi positions efficiently from the terminal! If you encounter any issues or need further assistance, refer to the documentation or contact the ORCA support team.
 
 # Future plan
 
@@ -186,6 +185,41 @@ All commands support both long and short option formats.
 
 ## Future Task
 
-- PnL Track
+Those are features I can imagine to add to that tool, as soon as we are done with the first project. 
+
+1. Creating django rest framework, where all the functionality is now accessable with an REST API, plus new calls like
+	1. configure get
+		1. public key
+	2. confgure set
+		1. private key
+	3. swap, from token to token
+	4. autoswap, if token amount of token0 or token1 is not enough for position
+	5. show current and past data/positions (from database)
+2. Database
+  
+   This includes the structure, init sql file and fields for all data necessary for later financial analysis as  well as the program code to interface with the database. The database itself can run in a docker container. Database to use is postgresql. The functionality for database interactions shall include as well calculations for PnL of positions, fees ...
+	1. Postgres database storing all information like
+		1. existing positions
+		2. past positions
+		3. collected fees
+		4. swapped tokens
+5. Integration of other Dexes
+   
+   There are other CLMM Pools, which are interesting to integrate. However, to my knowledge at least RAY has no Python SDK, but python is the language we stick to.
+	1. Raydium
+	2. Meteor
+
+6. Exploration and integration of other def/dex instruments like
+	1. Kamino Finance
+	2. MarginFi
+	3. Solend
+
+I think best order of those features is:
+
+1. Database Support
+2. Integration of Dexes
+3. PnL Track
 
     [How do I track PnL ](https://docs.orca.so/orca-for-liquidity-providers/master#how-do-i-track-pnl-profit-and-loss-after-providing-liquidity-in-pools)
+
+Then we check state and what makes sense next.
