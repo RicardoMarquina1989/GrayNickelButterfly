@@ -9,7 +9,7 @@ Orca Whirlpools Py is a robust Python library and suite of terminal tools develo
 * Seamless Integration: Orca Whirlpools Py seamlessly integrates with Orca CLAMM, allowing users to effortlessly manage positions within their market making strategies.
 * Simplified Position Management: With Orca Whirlpools Py, users can easily create, monitor, and adjust positions, enabling efficient trading within the Orca CLAMM ecosystem.
 * Increase/Decrease Liquidity: Orca Whirlpools Py empowers users to dynamically adjust liquidity levels within their positions, enabling precise control over trading strategies and market exposure.
-* List Whirlpools: Orca Whirlpools Py provides functionality to list all whirlpools associated with a user's account, allowing for easy monitoring and management of multiple positions simultaneously.
+* Listing Whirlpools: Orca Whirlpools Py provides functionality to list all whirlpools associated with a user's account, allowing for easy monitoring and management of multiple positions simultaneously.
 * Terminal Tools: Orca Whirlpools Py includes a suite of terminal tools, providing a user-friendly command-line interface for interacting with Orca CLAMM and managing positions.
 * Extensive Documentation: Comprehensive documentation and examples are provided to guide users in effectively utilizing Orca Whirlpools Py for their position management needs.
 * Flexible Customization: Orca Whirlpools Py offers flexibility for customization, allowing users to tailor their position management strategies to suit their specific requirements and preferences.
@@ -25,11 +25,11 @@ Orca Whirlpools Py is a robust Python library and suite of terminal tools develo
 ### Liquidity
 ### Why is it important to actively manage your positions?
 
-In CLMMs, there is a need for constant engagement in the market. The LPs and traders must be active to keep their concentrated positions more secure and tight within the price range. They would have to closely monitor their positions and frequently adjust to set up new ranges once the price moves up to the set price boundaries.
+- In CLMMs, there is a need for constant engagement in the market. The LPs and traders must be active to keep their concentrated positions more secure and tight within the price range. They would have to closely monitor their positions and frequently adjust to set up new ranges once the price moves up to the set price boundaries.
 
-Active management helps to reduce the chances of impermanent loss and zero fees. Also, it is less expensive to manage concentrated liquidity market makers (CLMMs). Unlike on Ethereum Virtual Machine, the execution fees cost less on Solana and do not have scalability issues.
+- Active management helps to reduce the chances of impermanent loss and zero fees. Also, it is less expensive to manage concentrated liquidity market makers (CLMMs). Unlike on Ethereum Virtual Machine, the execution fees cost less on Solana and do not have scalability issues.
 
-Close-range liquidity supply earns more fees than liquidity spread out on a much larger scale. Concentrated ranges ensure effective liquidity deployment. However, to maintain the set position and supply liquidity requires active participation. 
+- Close-range liquidity supply earns more fees than liquidity spread out on a much larger scale. Concentrated ranges ensure effective liquidity deployment. However, to maintain the set position and supply liquidity requires active participation. 
 
 ### What is the difference between a CLAMM and a traditional exchange?
 There are two major ways to trade cryptocurrencies: traditional orderbook exchanges (CLOBs) and automated market maker (AMM/CLAMM) protocols. Orderbooks look to match sellers and buyers based on price and amount of tokens to trade. In AMMs users trade against a pool of tokens, rather than directly with other users. 
@@ -98,14 +98,15 @@ This library have been tested in the following environment.
 * anchorpy: 0.18.0
 
 ## Installation
-```commandline
+```
 pip install -r requirements.txt
 ```
 
 ## Run
 
-```commandline
+```
 python3 main.py
 ```
 ## For more details
-Try to browser files of doc folder.
+
+Explore the files in the 'docs' folder for further details.
