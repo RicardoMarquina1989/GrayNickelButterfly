@@ -1,5 +1,18 @@
 
-# Title: Orca CLMM Position Manager Script
+# Orca Whirlpools Py - Python Library for Orca CLAMM Position Management
+
+## Description:
+Orca Whirlpools Py is a robust Python library and suite of terminal tools developed to streamline the management of positions within the Orca CLAMM(Concentrated Liquidity Automatic Market Maker) ecosystem. This library provides a convenient interface for interacting with Orca CLAMM, facilitating the creation, monitoring, and adjustment of positions within automated market making strategies.
+
+## Key Features:
+
+* Seamless Integration: Orca Whirlpools Py seamlessly integrates with Orca CLAMM, allowing users to effortlessly manage positions within their market making strategies.
+* Simplified Position Management: With Orca Whirlpools Py, users can easily create, monitor, and adjust positions, enabling efficient trading within the Orca CLAMM ecosystem.
+* Increase/Decrease Liquidity: Orca Whirlpools Py empowers users to dynamically adjust liquidity levels within their positions, enabling precise control over trading strategies and market exposure.
+* List Whirlpools: Orca Whirlpools Py provides functionality to list all whirlpools associated with a user's account, allowing for easy monitoring and management of multiple positions simultaneously.
+* Terminal Tools: Orca Whirlpools Py includes a suite of terminal tools, providing a user-friendly command-line interface for interacting with Orca CLAMM and managing positions.
+* Extensive Documentation: Comprehensive documentation and examples are provided to guide users in effectively utilizing Orca Whirlpools Py for their position management needs.
+* Flexible Customization: Orca Whirlpools Py offers flexibility for customization, allowing users to tailor their position management strategies to suit their specific requirements and preferences.
 
 ## Concept
 ### Concentrated Liquidity Market Maker (CLMM)
@@ -7,6 +20,9 @@
 
 - Traders can select a specific price range for their tokens, focusing on liquidity where they anticipate market activity. However, using concentrated liquidity market makers (CLMMs) can result in potential losses similar to those associated with active market-making within a traditional order book market.
 
+### Whirlpool
+### Position
+### Liquidity
 ### Why is it important to actively manage your positions?
 
 In CLMMs, there is a need for constant engagement in the market. The LPs and traders must be active to keep their concentrated positions more secure and tight within the price range. They would have to closely monitor their positions and frequently adjust to set up new ranges once the price moves up to the set price boundaries.
@@ -89,3 +105,5 @@ pip install -r requirements.txt
 ```commandline
 python3 main.py
 ```
+## For more details
+Try to browser files of doc folder.
