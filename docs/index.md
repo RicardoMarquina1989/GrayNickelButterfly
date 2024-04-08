@@ -77,11 +77,11 @@ Orca’s liquidity:
 
 #### Why is it important to actively manage your positions?
 
-In CLMMs, there is a need for constant engagement in the market. The LPs and traders must be active to keep their concentrated positions more secure and tight within the price range. They would have to closely monitor their positions and frequently adjust to set up new ranges once the price moves up to the set price boundaries.
+- In CLMMs, there is a need for constant engagement in the market. The LPs and traders must be active to keep their concentrated positions more secure and tight within the price range. They would have to closely monitor their positions and frequently adjust to set up new ranges once the price moves up to the set price boundaries.
 
-Active management helps to reduce the chances of impermanent loss and zero fees. Also, it is less expensive to manage concentrated liquidity market makers (CLMMs). Unlike on Ethereum Virtual Machine, the execution fees cost less on Solana and do not have scalability issues.
+- Active management helps to reduce the chances of impermanent loss and zero fees. Also, it is less expensive to manage concentrated liquidity market makers (CLMMs). Unlike on Ethereum Virtual Machine, the execution fees cost less on Solana and do not have scalability issues.
 
-Close-range liquidity supply earns more fees than liquidity spread out on a much larger scale. Concentrated ranges ensure effective liquidity deployment. However, to maintain the set position and supply liquidity requires active participation. 
+- Close-range liquidity supply earns more fees than liquidity spread out on a much larger scale. Concentrated ranges ensure effective liquidity deployment. However, to maintain the set position and supply liquidity requires active participation. 
 
 ### FAQ
 
@@ -188,31 +188,31 @@ Notes:
 Those are features I can imagine to add to that tool, as soon as we are done with the first project. 
 
 1. Creating django rest framework, where all the functionality is now accessable with an REST API, plus new calls like
-	1. configure get
-		1. public key
-	2. confgure set
-		1. private key
-	3. swap, from token to token
-	4. autoswap, if token amount of token0 or token1 is not enough for position
-	5. show current and past data/positions (from database)
-2. Database
+	- configure get
+		- public key
+	- confgure set
+		- private key
+	- swap, from token to token
+	- autoswap, if token amount of token0 or token1 is not enough for position
+	- show current and past data/positions (from database)
+1. Database
   
    This includes the structure, init sql file and fields for all data necessary for later financial analysis as  well as the program code to interface with the database. The database itself can run in a docker container. Database to use is postgresql. The functionality for database interactions shall include as well calculations for PnL of positions, fees ...
-	1. Postgres database storing all information like
-		1. existing positions
-		2. past positions
-		3. collected fees
-		4. swapped tokens
-5. Integration of other Dexes
+	- Postgres database storing all information like
+		- existing positions
+		- past positions
+		- collected fees
+		- swapped tokens
+1. Integration of other Dexes
    
    There are other CLMM Pools, which are interesting to integrate. However, to my knowledge at least RAY has no Python SDK, but python is the language we stick to.
-	1. Raydium
-	2. Meteor
+	- 1. Raydium
+	- 2. Meteor
 
-6. Exploration and integration of other def/dex instruments like
-	1. Kamino Finance
-	2. MarginFi
-	3. Solend
+1. Exploration and integration of other def/dex instruments like
+	- 1. Kamino Finance
+	- 2. MarginFi
+	- 3. Solend
 
 I think best order of those features is:
 
