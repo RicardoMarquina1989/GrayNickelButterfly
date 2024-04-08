@@ -50,9 +50,7 @@ Users of the SDK can reduce position NFT related fees by using openPosition with
 
 - With fully permissionless pool creation anyone can create a pool on Orca.
 ### Account Architecture
-
-<img alt="" style="max-width: 100%; height: auto; visibility: visible;" src="docs/image.png" sizes="(max-width: 640px) 400px, 768px" width="431" height="432" />
-
+![Account Architecture](./docs/images/account-structure.png)
 ### Tick Spacing
 <table>
 <thead>
