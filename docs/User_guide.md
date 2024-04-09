@@ -195,6 +195,7 @@ $ orca check-position [options]
 
 - `--show_positions, -P`: Show information for all positions.
 
+- `--show_wallet_positions,-w <address>`: Show information for all positions of the specified wallet.
 #### Optional
 - `-v, --verbose`: Enable verbose mode for detailed output.
 
