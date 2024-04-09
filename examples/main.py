@@ -28,6 +28,8 @@ python main.py get-fees -F
 - Get-fees specific position
 python main.py get-fees -f CA8bLurQjd8m8qwPH8NLnq1TL6fixxKEMYxxG8ZEKc5T
 
+- Close specified position and withdraw
+python main.py close-position -p CA8bLurQjd8m8qwPH8NLnq1TL6fixxKEMYxxG8ZEKc5T
 '''
 # Implement functionality for opening a position
 async def cli_open_position(args):
@@ -76,7 +78,9 @@ async def cli_pool_gathering(args):
 
 async def cli_close_position(args):
     # Implement functionality for closing a position
-    pass
+    ctx = get_context()
+    position = Pubkey.from_string(args.position)
+    await close_position(ctx=ctx, position_pubkey=position, slippage=args.slippage, priority_fee=args.priority_fee)
 
 async def cli_check_position(args):
     # Implement functionality for checking a position
@@ -120,11 +124,12 @@ async def handle_subcommand(args):
     subcommand = args.subcommand
     
     switch = {
-        'open-position': cli_open_position,
-        'gather-pool': cli_pool_gathering,
-        'check-position': cli_check_position,
-        'check-fees': cli_check_fees,
-        'get-fees': cli_get_fees
+        'open-position':    cli_open_position,
+        'close-position':   cli_close_position,
+        'gather-pool':      cli_pool_gathering,
+        'check-position':   cli_check_position,
+        'check-fees':       cli_check_fees,
+        'get-fees':         cli_get_fees
     }
 
     # Get the function corresponding to the subcommand and call it
@@ -133,6 +138,7 @@ async def handle_subcommand(args):
         await func(args)
     else:
         print("Invalid subcommand")
+
 
 """Main function to parse arguments and execute operations."""
 async def main():
@@ -165,6 +171,11 @@ async def main():
     pool_gathering_parser.add_argument('--pool', '-p', metavar='<address>', help='Show pool with specified address')
 
     # Subparser for 'close-position' command - TBD
+    close_position_parser = subparsers.add_parser('close-position', help='Close a position and withdraw all')
+    close_position_parser.add_argument('--position', '-p', metavar='<address>', help='Close position with specified address')
+    close_position_parser.add_argument('--slippage', '-s', default=0.3, help='Slippage')
+    close_position_parser.add_argument('--priority_fee', '-pf', default=0, help='Priority fee, unit: lamport, example: 1000')
+    # close_position_parser.add_argument("--check", '-c', action="store_true", help="Flag to indicate whether to perform a closing")
 
     # Subparser for 'check-position' command
     check_position_parser = subparsers.add_parser('check-position', help='Check position')

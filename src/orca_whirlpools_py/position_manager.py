@@ -354,6 +354,9 @@ async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, 
     print('{:>20} {}'.format("address:", position.position_mint))
     print('{:>20} {}'.format("liquidity:", position.liquidity))
     
+    if position.liquidity ==0:
+        print('The position is empty.')
+        return
     # get ATA (considering WSOL)
     token_account_a = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_a)
     token_account_b = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_b)
@@ -705,10 +708,31 @@ async def check_wallet_fees(ctx: WhirlpoolContext):
 """
 async def close_position(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippage:int=30, priority_fee: int = 0):
     print("Closing the position...")
-    whirlpool, position = await withdraw_liquidity(ctx=ctx, position_pubkey=position_pubkey, slippage=slippage, priority_fee=priority_fee)
-    # collect fees and rewards
-    await build_execute_collect_fees_reward_transactions(ctx, whirlpool=whirlpool, position=position)
+    try:
+        whirlpool, position = await withdraw_liquidity(ctx=ctx, position_pubkey=position_pubkey, slippage=slippage, priority_fee=priority_fee)
+    except TransactionExpiredBlockheightExceededError as e:
+        # Handle the specific error
+        print("Transaction expired due to block height exceeded:", e)
+        return
+    except Exception as e:
+        # Handle other exceptions
+        print("An unexpected error occurred:", e)
+        return
     
+    
+    # collect fees and rewards
+    try:
+        await build_execute_collect_fees_reward_transactions(ctx, whirlpool=whirlpool, position=position)
+    except TransactionExpiredBlockheightExceededError as e:
+        # Handle the specific error
+        print("Transaction expired due to block height exceeded:", e)
+        return
+    except Exception as e:
+        # Handle other exceptions
+        print("An unexpected error occurred:", e)
+        return
+    
+
     position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
     position = await ctx.fetcher.get_position(position_pda, True)
     position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position.position_mint)
@@ -743,6 +767,11 @@ async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, sli
     position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position_pubkey)
     
     whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=position.whirlpool)
+
+    if position.liquidity == 0:
+        print('Ballance of the position is zero.')
+        return (whirlpool, position)
+    
     token_account_a = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_a)
     token_account_b = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_b)
     
