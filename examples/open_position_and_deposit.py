@@ -16,8 +16,8 @@ async def main():
     parser.add_argument("-U", "--upper", help="Upper end of position")
     parser.add_argument("-L", "--lower", help="Lower end of position")
     parser.add_argument("-W", "--whirlpool_pubkey", help="Whirlpool public key", default=SOL_USDC_WHIRLPOOL_PUBKEY)
-    parser.add_argument('-s', "--slippage", type=float, help="acceptable slippage value when deposit", default=0.3)
-    parser.add_argument('-S', "--priority_fee", type=float, help="Priority fee(0~1000)", default=0)
+    parser.add_argument('-S', "--slippage", type=float, help="acceptable slippage value when deposit", default=0.3)
+    parser.add_argument('-P', "--priority_fee", type=float, help="Priority fee(0~1000)", default=0)
     parser.add_argument('-D', "--deposit_amount", type=float, help="Deposit amount when increase liquidity")
     args = parser.parse_args()
 
@@ -26,6 +26,6 @@ async def main():
     
     ctx = get_context()
     whirlpool_pubkey = Pubkey.from_string(args.whirlpool_pubkey)
-    await open_position(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey, upper=args.upper, lower=args.lower, slippage=args.slippage, priority_fee=0, deposit_amount='0.01')
+    await open_position(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey, upper=args.upper, lower=args.lower, slippage=args.slippage, priority_fee=0, deposit_amount=0.01)
     
 asyncio.run(main())

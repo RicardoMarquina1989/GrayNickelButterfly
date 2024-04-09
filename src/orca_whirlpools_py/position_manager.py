@@ -24,17 +24,20 @@ def rand_pubkey() -> Pubkey:
 @return:    
 """
 async def open_position(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey, 
-                        upper: float, lower: float, deposit_amount: float,
-                        slippage:float=0.3, priority_fee: int = 0):
-    
+                        upper: float, lower: float, amount0: float=0, amount1: float=0,
+                        slippage:float=0.3, priority_fee: int = 0, check: bool = False):
     # get whirlpool
     whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
     decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals  # SOL_DECIMAL
     decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals  # USDC_DECIMAL
 
     # input
-    input_token = whirlpool.token_mint_b  # USDC
-    input_amount = DecimalUtil.to_u64(Decimal(deposit_amount), decimals_b)  # USDC
+    is_amount0_empty = amount0 is None or amount0 <= 0
+    input_token = whirlpool.token_mint_b if is_amount0_empty else whirlpool.token_mint_a
+    deposit_amount = amount1 if is_amount0_empty else amount0
+    deposit_decimals = decimals_b if is_amount0_empty else decimals_a
+    
+    input_amount = DecimalUtil.to_u64(Decimal(deposit_amount), deposit_decimals)
     slippage *= 100
     acceptable_slippage = Percentage.from_fraction(int(slippage), 100)
     # price_lower = price / 2
@@ -60,6 +63,9 @@ async def open_position(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey,
     print("max_token_a", quote.token_max_a)
     print("max_token_a", quote.token_max_b)
 
+    if check: 
+        print('End of checking.')
+        return
     # get ATA (considering WSOL)
     token_account_a = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_a, quote.token_max_a)
     token_account_b = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_b, quote.token_max_b)
@@ -123,6 +129,7 @@ async def open_position(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey,
         # tx.set_compute_unit_price(int(1000 * 10**6 / 200000))
         tx.set_compute_unit_price(int(priority_fee * 10**6 / 200000))
     # execute
+    print('Executing transactions...')
     signature = await tx.build_and_execute()
     print("TX signature", signature)
 
