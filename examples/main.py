@@ -65,7 +65,7 @@ async def main():
     open_position_parser.add_argument('--upper', '-u', required=True, type=float, help='Upper end')
     open_position_parser.add_argument('--whirlpool', '-wp', required=True, help='Pool address')
     open_position_parser.add_argument('--slippage', '-s', default=0.3, help='Slippage')
-    open_position_parser.add_argument('--priority_fee', '-pf', default=0, help='Priority fee')
+    open_position_parser.add_argument('--priority_fee', '-pf', default=0, help='Priority fee, unit: lamport, example: 1000')
     # open_position_parser.add_argument('--token0', '-t0', required=True, help='Token0 address')
     # open_position_parser.add_argument('--token1', '-t1', required=True, help='Token1 address')
     # Add the arguments with custom required function
