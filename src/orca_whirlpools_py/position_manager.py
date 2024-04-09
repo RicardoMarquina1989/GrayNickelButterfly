@@ -506,7 +506,7 @@ async def harvest_whirlpool_fees(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey
                     # Perform any necessary cleanup or retries if needed
                 except Exception as e:
                     # Handle other exceptions
-                    print("An unexpected error occurred:", e)
+                    print("Transaction failed:", e)
                     # Perform appropriate actions, like logging, retrying, or exiting gracefully
                 
 '''

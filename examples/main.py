@@ -22,6 +22,12 @@ python main.py check-fees -C
 - Check-fees specific position
 python main.py check-fees -c CA8bLurQjd8m8qwPH8NLnq1TL6fixxKEMYxxG8ZEKc5T
 
+- Get-fees all positions of your wallet
+python main.py get-fees -F
+
+- Get-fees specific position
+python main.py get-fees -f CA8bLurQjd8m8qwPH8NLnq1TL6fixxKEMYxxG8ZEKc5T
+
 '''
 # Implement functionality for opening a position
 async def cli_open_position(args):
@@ -94,7 +100,17 @@ async def cli_check_fees(args):
 
 async def cli_get_fees(args):
     # Implement functionality for getting fees
-    pass
+    ctx = get_context()
+    if args.to_wallet is not None:
+        print('Transfering fees to specified wallet is not supported yet, Sorry.')
+        return
+    if args.get_fees is not None:
+        position_pubkey = Pubkey.from_string(args.get_fees)
+        await harvest_position_fees(ctx=ctx, position_pubkey=position_pubkey)
+        return
+    # get all positions
+    if args.get_all_fees:
+        await harvest_wallet_fees(ctx=ctx)
 
 def at_least_one_arg_provided(amount0, amount1):
     if (amount0 is None or amount0==0) and (amount1 is None or amount1 == 0):
@@ -107,7 +123,8 @@ async def handle_subcommand(args):
         'open-position': cli_open_position,
         'gather-pool': cli_pool_gathering,
         'check-position': cli_check_position,
-        'check-fees': cli_check_fees
+        'check-fees': cli_check_fees,
+        'get-fees': cli_get_fees
     }
 
     # Get the function corresponding to the subcommand and call it
@@ -161,9 +178,9 @@ async def main():
 
     # Subparser for 'get-fees' command
     get_fees_parser = subparsers.add_parser('get-fees', help='Get fees')
-    get_fees_parser.add_argument('--get-fees', '-f', action='store_true', help='Get fees from one position')
-    get_fees_parser.add_argument('--get-all-fees', '-F', action='store_true', help='Get fees from all positions')
-    get_fees_parser.add_argument('--to-wallet', '-w', metavar='addr', help='Transfer fees to specified wallet address')
+    get_fees_parser.add_argument('--get_fees', '-f', metavar='addr', help='Get fees from one position')
+    get_fees_parser.add_argument('--get_all_fees', '-F', action='store_true', help='Get fees from all positions')
+    get_fees_parser.add_argument('--to_wallet', '-w', metavar='addr', help='Transfer fees to specified wallet address')
 
     args = parser.parse_args()
 
