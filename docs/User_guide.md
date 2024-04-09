@@ -15,16 +15,16 @@ $ orca open-position [options]
 #### Options:
 - `--lower, -l`: Lower end of the position.
 - `--upper, -u`: Upper end of the position.
-- `--pool, -P`: Address of the liquidity pool.
-- `--token0, -t0`: Address of token0.
-- `--token1, -t1`: Address of token1.
+- `--pool, -p`: Address of the liquidity pool.
+<!-- - `--token0, -t0`: Address of token0.
+- `--token1, -t1`: Address of token1. -->
 - `--amount0, -a0`: Amount of token0.
 - `--amount1, -a1`: Amount of token1.
-- `--liquidity, --lp`: Overall amount of liquidity.
+<!-- - `--liquidity, --lp`: Overall amount of liquidity. -->
 - `--check`: Check distribution necessary for each token0, token1.
 #### Optional
 - `--slippage, -s`: Slippage for the transaction (default: 0.3%).
-- `--priority_fee, -S`: Priority fee for the transaction (default: 0).
+- `--priority_fee, -pf`: Priority fee for the transaction (default: 0).
 
 
 ### 2. Check Fees
@@ -36,8 +36,8 @@ The `check-fees` command allows users to check the fees gathered from positions.
 $ orca check-fees [options]
 ```
 #### Options:
-- `--position, -p`: Show fees for a specific position.
-- `--all, -a`: Show fees for all known positions.
+- `--check_fees, -c`: Show fees for a specific position.
+- `--check_all_fees, -C`: Show fees for all known positions.
 
 #### Optional
 - `--verbose, -v`: Enable verbose mode for detailed output.
@@ -53,10 +53,10 @@ The `get-fees` command allows you to retrieve the fees generated from positions.
 $ orca get-fees [options]
 ```
 #### Options:
-- `--get-fees, -g`: Get fees from one position.
-- `--get-all-fees, -G`: Get fees from all positions.
+- `--get_fees, -f`: Get fees from one position.
+- `--get_all_fees, -F`: Get fees from all positions.
 
-- `--to-wallet <addr>`: Transfer fees to specified wallet address.
+- `--to-wallet,-w <addr>`: Transfer fees to specified wallet address.
 
 #### Optional
 - `--verbose, -v`: Enable verbose mode for detailed output.
@@ -110,6 +110,8 @@ $ orca close-position <addr> [options]
 - `<addr>`: Address of the position to be closed.
 
 #### Options:
+- `--slippage`: Slippage.
+- `--priority_fee`: Priority fee in lamport.
 - `--force`: Close all positions without specifying an address. Use this flag to circumvent accidental deletion.
 - `--keep-nft`: Keep the NFT in the wallet instead of burning it.
 - `--transfer-nft <wallet_address>`: Transfer the NFT to a different wallet address.
@@ -189,9 +191,9 @@ $ orca check-position [options]
 ```
 
 #### Options:
-- `--address, -a`: Show information for a specific position by its address.
+- `--show_position, -p`: Show information for a specific position by its address.
 
-- `--all, -A`: Show information for all positions.
+- `--show_positions, -P`: Show information for all positions.
 
 #### Optional
 - `-v, --verbose`: Enable verbose mode for detailed output.
