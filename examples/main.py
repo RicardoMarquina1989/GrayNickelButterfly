@@ -13,8 +13,14 @@ from utils import get_context
 - Open a position with deposit
 python main.py open-position -u 250 -l 100 -wp HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ -a1 0.1 -c
 
-- Gatheing pools
+- Gathering pools
 python main.py gather-pool -a
+
+- Check-fees all positions of your wallet
+python main.py check-fees -C
+
+- Check-fees specific position
+python main.py check-fees -c CA8bLurQjd8m8qwPH8NLnq1TL6fixxKEMYxxG8ZEKc5T
 
 '''
 # Implement functionality for opening a position
@@ -77,7 +83,14 @@ async def cli_check_position(args):
 
 async def cli_check_fees(args):
     # Implement functionality for checking fees
-    pass
+    ctx = get_context()
+    if args.check_fees is not None:
+        position_pubkey = Pubkey.from_string(args.check_fees)
+        await check_position_fees(ctx=ctx, position_pubkey=position_pubkey)
+        return
+    # get all positions
+    if args.check_all_fees:
+        await check_wallet_fees(ctx=ctx)
 
 async def cli_get_fees(args):
     # Implement functionality for getting fees
@@ -86,7 +99,24 @@ async def cli_get_fees(args):
 def at_least_one_arg_provided(amount0, amount1):
     if (amount0 is None or amount0==0) and (amount1 is None or amount1 == 0):
         raise argparse.ArgumentTypeError('At least one of --amount0 or --amount1 is required.')
+
+async def handle_subcommand(args):
+    subcommand = args.subcommand
     
+    switch = {
+        'open-position': cli_open_position,
+        'gather-pool': cli_pool_gathering,
+        'check-position': cli_check_position,
+        'check-fees': cli_check_fees
+    }
+
+    # Get the function corresponding to the subcommand and call it
+    func = switch.get(subcommand)
+    if func:
+        await func(args)
+    else:
+        print("Invalid subcommand")
+
 """Main function to parse arguments and execute operations."""
 async def main():
     parser = argparse.ArgumentParser(description='ORCA Script CLI')
@@ -126,8 +156,8 @@ async def main():
 
     # Subparser for 'check-fees' command
     check_fees_parser = subparsers.add_parser('check-fees', help='Check fees')
-    check_fees_parser.add_argument('--check-fees', '-c', action='store_true', help='Check fees for one position')
-    check_fees_parser.add_argument('--check-all-fees', '-C', action='store_true', help='Check fees for all positions')
+    check_fees_parser.add_argument('--check_fees', '-c', metavar='<address>', help='Check fees for one position')
+    check_fees_parser.add_argument('--check_all_fees', '-C', action='store_true', help='Check fees for all positions')
 
     # Subparser for 'get-fees' command
     get_fees_parser = subparsers.add_parser('get-fees', help='Get fees')
@@ -137,15 +167,8 @@ async def main():
 
     args = parser.parse_args()
 
-    if args.subcommand == 'open-position':
-        await cli_open_position(args)
-    elif args.subcommand == 'gather-pool':
-        await cli_pool_gathering(args)
-    elif args.subcommand == 'check-position':
-        await cli_check_position(args)
-    # Add more elif blocks for other subcommands
-    else:
-        parser.error("Invalid operation")
+    # Call the function with your arguments
+    await handle_subcommand(args)
 
 if __name__ == "__main__":
     asyncio.run(main())
