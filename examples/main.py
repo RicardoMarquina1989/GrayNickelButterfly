@@ -3,18 +3,21 @@ import asyncio
 
 from solders.pubkey import Pubkey
 
-from orca_whirlpool.transaction import TransactionBuilder
-
 from orca_whirlpools_py.whirlpools import find_whirlpools, get_liquidity_distribution_by_whirlpools_pubkey, get_positions_by_wallet_pubkey
 from orca_whirlpools_py.position_manager import open_position, add_liquidity, harvest_position_fees, harvest_whirlpool_fees, harvest_wallet_fees, get_whirlpool_and_show_info, check_position_fees, check_fees_rewards_of_position, check_whirlpool_fees, check_wallet_fees, close_position, withdraw_liquidity
 from orca_whirlpools_py.positions import find_positions
 
 from utils import get_context
 
+'''    Sample command lines
+- Open a position with deposit
+python main.py open-position -u 250 -l 100 -wp HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ -a1 0.1 -c
+
+- Gatheing pools
+python main.py gather-pool -a
+
+'''
 # Implement functionality for opening a position
-# Sample command line
-# python main.py open-position -u 250 -l 100 -wp HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ -a1 0.1 -c
-# 
 async def cli_open_position(args):
     # Implement functionality for opening a position
     at_least_one_arg_provided(args.amount0, args.amount1)
@@ -32,7 +35,31 @@ async def cli_withdraw_position(args):
 
 async def cli_pool_gathering(args):
     # Implement functionality for gathering pool information
-    pass
+    # The result are equivalent with when you access to https://www.orca.so/pools?mintvl=0
+    if args.pool is not None:
+        print("Gathering a specific pool is not supported yet, Sorry.")
+        return
+    # get all whirlpools
+    if args.all:
+        orca_supported_whirlpools = await find_whirlpools()
+        # To show the result
+        print('{:<43} {:<20} {:<8} {:<25} {:<45} {:<45} {:<4}'.format('address', 'name', 'usdTVL', 'price', 'mintA', 'mintB', 'tick_spacing'))
+        for p in orca_supported_whirlpools:
+            address = str(p.get("address", ""))
+            name = p.get("name", "")
+            price = p.get("price", 0)
+            formatedPrice = "${:,.2f}".format(price)
+            usdTVL = p.get("usdTVL", 0)
+            formatedUsdTVL = "${:,.2f}".format(usdTVL)
+            mintA = str(p.get("mintA", ""))
+            mintB = str(p.get("mintB", ""))
+            tick_spacing = p.get("tick_spacing", "")
+            print('{:<43} {:<20} {:<8} {:<25} {:<45} {:<45} {:<4}'.format(address, name, formatedUsdTVL, formatedPrice, mintA, mintB, tick_spacing))
+            
+        print('{:<43} {:<20} {:<8} {:<25} {:<45} {:<45} {:<4}'.format('address', 'name', 'usdTVL', 'price', 'mintA', 'mintB', 'tick_spacing'))
+
+        print(len(orca_supported_whirlpools), "whirlpools found")
+    
 
 async def cli_close_position(args):
     # Implement functionality for closing a position
@@ -79,10 +106,10 @@ async def main():
 
     # Subparser for 'withdraw-position' command - TBD
 
-    # Subparser for 'pool-gathering' command
-    pool_gathering_parser = subparsers.add_parser('pool-gathering', help='Gather pool information')
-    pool_gathering_parser.add_argument('--show-pools', action='store_true', help='Show all pools')
-    pool_gathering_parser.add_argument('--show-pool', metavar='<address>', help='Show pool with specified address')
+    # Subparser for 'gather-pool' command
+    pool_gathering_parser = subparsers.add_parser('gather-pool', help='Gather pool information')
+    pool_gathering_parser.add_argument('--all', '-a', action='store_true', help='Show all pools')
+    pool_gathering_parser.add_argument('--pool', '-p', metavar='<address>', help='Show pool with specified address')
 
     # Subparser for 'close-position' command - TBD
 
@@ -106,7 +133,7 @@ async def main():
 
     if args.subcommand == 'open-position':
         await cli_open_position(args)
-    elif args.subcommand == 'pool-gathering':
+    elif args.subcommand == 'gather-pool':
         await cli_pool_gathering(args)
     # Add more elif blocks for other subcommands
     else:
