@@ -353,42 +353,38 @@ async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, 
     print('{:>20} {}'.format("name:", position.pubkey))
     print('{:>20} {}'.format("address:", position.position_mint))
     print('{:>20} {}'.format("liquidity:", position.liquidity))
+    print('{:*^80}'.format(""))
+
+    # ------------ Update_fees_and_rewards if liquidity is greather than 0  -------------
+    if position.liquidity > 0:
+        tick_array_lower_start_tick_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
+        tick_array_upper_start_tick_index = TickUtil.get_start_tick_index(position.tick_upper_index, whirlpool.tick_spacing)
+        tick_array_lower = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_lower_start_tick_index).pubkey
+        tick_array_upper = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_upper_start_tick_index).pubkey
+        update_fees_and_rewards_ix = WhirlpoolIx.update_fees_and_rewards(
+            ctx.program_id,
+            UpdateFeesAndRewardsParams(
+                whirlpool=position.whirlpool,
+                position=position_pda,
+                tick_array_lower=tick_array_lower,
+                tick_array_upper=tick_array_upper,
+            )
+        )
+        # Build transaction
+        tx = TransactionBuilder(ctx.connection, ctx.wallet)
+        tx.add_instruction(update_fees_and_rewards_ix)    
+        tx.add_signer(ctx.wallet)
+        # Execute transaction
+        print("Initiating updates for fees and rewards transactions. Please wait....")
+        signature = await tx.build_and_execute()
+        print("TX signature", signature)
+    # ----------- End Update_fees_and_rewards --------------
     
-    if position.liquidity ==0:
-        print('The position is empty.')
-        return
     # get ATA (considering WSOL)
     token_account_a = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_a)
     token_account_b = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_b)
     
-    # Build transaction  
-    tx = TransactionBuilder(ctx.connection, ctx.wallet)
-
-    # add instructions
-    tx.add_instruction(token_account_a.instruction)
-    tx.add_instruction(token_account_b.instruction)
-
-    tick_array_lower_start_tick_index = TickUtil.get_start_tick_index(position.tick_lower_index, whirlpool.tick_spacing)
-    tick_array_upper_start_tick_index = TickUtil.get_start_tick_index(position.tick_upper_index, whirlpool.tick_spacing)
-    tick_array_lower = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_lower_start_tick_index).pubkey
-    tick_array_upper = PDAUtil.get_tick_array(ctx.program_id, position.whirlpool, tick_array_upper_start_tick_index).pubkey
-    update_fees_and_rewards_ix = WhirlpoolIx.update_fees_and_rewards(
-        ctx.program_id,
-        UpdateFeesAndRewardsParams(
-            whirlpool=position.whirlpool,
-            position=position_pda,
-            tick_array_lower=tick_array_lower,
-            tick_array_upper=tick_array_upper,
-        )
-    )
-    # Build transaction
-    # tx = TransactionBuilder(ctx.connection, ctx.wallet)
-    tx.add_instruction(update_fees_and_rewards_ix)    
-    # tx.add_signer(ctx.wallet)
-    # Execute transaction
-    # signature = await tx.build_and_execute()
-    # print("TX signature", signature)
-
+    # ----------Start collect_fees ---------------
     # get quote
     quote = QuoteBuilder.collect_fees(CollectFeesQuoteParams(
         whirlpool=whirlpool,
@@ -399,23 +395,37 @@ async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, 
     print('{:*^80}'.format("Quote-Collect"))
     print('{:>20} {}'.format("fee_a_estimated:", quote.fee_a))
     print('{:>20} {}'.format("fee_b_estimated:", quote.fee_b))
-
-    collect_fees_ix = WhirlpoolIx.collect_fees(
-        ctx.program_id,
-        CollectFeesParams(
-            whirlpool=whirlpool.pubkey,
-            position=position_pda,
-            position_authority=ctx.wallet.pubkey(),
-            position_token_account=position_ata,
-            token_owner_account_a=token_account_a.pubkey,
-            token_vault_a=whirlpool.token_vault_a,
-            token_owner_account_b=token_account_b.pubkey,
-            token_vault_b=whirlpool.token_vault_b,
+    
+    if quote.fee_a != 0 or quote.fee_b != 0: 
+        collect_fees_ix = WhirlpoolIx.collect_fees(
+            ctx.program_id,
+            CollectFeesParams(
+                whirlpool=whirlpool.pubkey,
+                position=position_pda,
+                position_authority=ctx.wallet.pubkey(),
+                position_token_account=position_ata,
+                token_owner_account_a=token_account_a.pubkey,
+                token_vault_a=whirlpool.token_vault_a,
+                token_owner_account_b=token_account_b.pubkey,
+                token_vault_b=whirlpool.token_vault_b,
+            )
         )
-    )
-    # Add instructions
-    tx.add_instruction(collect_fees_ix)
+        tx = TransactionBuilder(ctx.connection, ctx.wallet)
+        tx.set_compute_unit_limit(200000)
+        # add priority fees (+ 1000 lamports)
+        tx.set_compute_unit_price(int(1000 * 10**6 / 200000))
+        # Add instructions
+        tx.add_instruction(token_account_a.instruction)
+        tx.add_instruction(token_account_b.instruction)
+        tx.add_instruction(collect_fees_ix)
+        tx.add_signer(ctx.wallet)
+        # Execute transaction
+        print("Processing fees collection transactions. Please wait...")
+        signature = await tx.build_and_execute()
+        print("TX signature", signature)
+    # ----------- End collect_fees --------------
 
+    # ----------Start collect_rewards ---------------
     # quote rewards
     quote_rewards = QuoteBuilder.collect_rewards(CollectRewardsQuoteParams(
         whirlpool=whirlpool,
@@ -467,16 +477,17 @@ async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, 
                 reward_vault=whirlpool.reward_infos[0].vault,
             )
         )
+        tx = TransactionBuilder(ctx.connection, ctx.wallet)
+        # Add instructions
         tx.add_instruction(collect_reward_ix)
+        tx.add_signer(ctx.wallet)
+        # Execute transaction
+        print("Initiating the process to collect rewards. Please wait...")
+        signature = await tx.build_and_execute()
+        print("TX signature", signature)
     else:
         print('{:<80}'.format("There aren't any rewards"))
-    
-    tx.add_signer(ctx.wallet)
-    # Execute transaction
-    print('{:<80}'.format("Building and Executing transactions to collect fees of the position..."))
-    signature = await tx.build_and_execute()
-    print("TX signature", signature)
-
+    # ----------- End collect_rewards --------------
 '''
 @func: Harvest fees and rewards of the whirlpool
     In other words, it iterates harvesting position by position
@@ -707,7 +718,7 @@ async def check_wallet_fees(ctx: WhirlpoolContext):
 @func: Close a position.
 """
 async def close_position(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippage:int=30, priority_fee: int = 0):
-    print("Closing the position...")
+    print("Position closing...")
     try:
         whirlpool, position = await withdraw_liquidity(ctx=ctx, position_pubkey=position_pubkey, slippage=slippage, priority_fee=priority_fee)
     except TransactionExpiredBlockheightExceededError as e:
@@ -716,7 +727,7 @@ async def close_position(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippag
         return
     except Exception as e:
         # Handle other exceptions
-        print("An unexpected error occurred:", e)
+        print("Withdraw transaction failed")
         return
     
     
@@ -738,24 +749,39 @@ async def close_position(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippag
     position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position.position_mint)
     ctx.fetcher.get_latest_block_timestamp
     
-    close_position_ix = WhirlpoolIx.close_position(
-        ctx.program_id,
-        ClosePositionParams(
-            position_authority=ctx.wallet.pubkey(),
-            receiver=ctx.wallet.pubkey(),
-            position=position_pda,
-            position_mint=position.position_mint,
-            position_token_account=position_ata,
+    # close position
+    try:
+        # build transaction
+        tx = TransactionBuilder(ctx.connection, ctx.wallet)
+        
+        close_position_ix = WhirlpoolIx.close_position(
+            ctx.program_id,
+            ClosePositionParams(
+                position_authority=ctx.wallet.pubkey(),
+                receiver=ctx.wallet.pubkey(),
+                position=position_pda,
+                position_mint=position.position_mint,
+                position_token_account=position_ata,
+            )
         )
-    )
-
-    # build transaction
-    tx = TransactionBuilder(ctx.connection, ctx.wallet)
-    tx.add_instruction(close_position_ix)
-    tx.add_signer(ctx.wallet)
-    # Execute transaction
-    signature = await tx.build_and_execute()
-    print("TX signature", signature)
+        tx.add_instruction(close_position_ix)
+        tx.add_signer(ctx.wallet)
+        if priority_fee is not None:
+            tx.set_compute_unit_limit(200000)
+            # add priority fees (+ 1000 lamports)
+            # tx.set_compute_unit_price(int(1000 * 10**6 / 200000))
+            tx.set_compute_unit_price(int(priority_fee * 10**6 / 200000))
+        # Execute transaction
+        print("Closing position process. Please wait...")
+        signature = await tx.build_and_execute()
+        print("TX signature", signature)
+    except TransactionExpiredBlockheightExceededError as e:
+        # Handle the specific error
+        print("Transaction expired due to block height exceeded:", e)
+        return
+    except Exception as e:
+        print("Closing transaction failed")
+        return
 
 '''
 Decrease liquidity
@@ -795,7 +821,7 @@ async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, sli
     print("est_token_a", quote.token_est_a)
     print("est_token_b", quote.token_est_b)
     print("min_token_a", quote.token_min_a)
-    print("min_token_a", quote.token_min_b)
+    print("min_token_b", quote.token_min_b)
     
     decrease_liquidity_ix = WhirlpoolIx.decrease_liquidity(
         ctx.program_id,
@@ -816,6 +842,12 @@ async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, sli
         )
     )
     tx = TransactionBuilder(ctx.connection, ctx.wallet)
+    if priority_fee is not None:
+        tx.set_compute_unit_limit(200000)
+        # add priority fees (+ 1000 lamports)
+        # tx.set_compute_unit_price(int(1000 * 10**6 / 200000))
+        tx.set_compute_unit_price(int(priority_fee * 10**6 / 200000))
+
     tx.add_instruction(token_account_a.instruction)
     tx.add_instruction(token_account_b.instruction)
     tx.add_instruction(decrease_liquidity_ix)
