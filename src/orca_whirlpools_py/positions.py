@@ -43,8 +43,6 @@ async def find_positions(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey):
     if response.status_code == 200:
         # Parsing the JSON response
         data = response.json()
-        print(data)
-        return
         tokens = []
         for token in data["tokens"]:
             tokens.append({

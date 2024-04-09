@@ -36,6 +36,7 @@ async def cli_withdraw_position(args):
 async def cli_pool_gathering(args):
     # Implement functionality for gathering pool information
     # The result are equivalent with when you access to https://www.orca.so/pools?mintvl=0
+    
     if args.pool is not None:
         print("Gathering a specific pool is not supported yet, Sorry.")
         return
@@ -67,7 +68,12 @@ async def cli_close_position(args):
 
 async def cli_check_position(args):
     # Implement functionality for checking a position
-    pass
+    if args.show_position is not None:
+        print("Checking specific position is not supported yet, Sorry.")
+        return
+    # get all positions
+    if args.show_positions:
+        print("Checking all positions is not supported yet, Sorry.")
 
 async def cli_check_fees(args):
     # Implement functionality for checking fees
@@ -115,8 +121,8 @@ async def main():
 
     # Subparser for 'check-position' command
     check_position_parser = subparsers.add_parser('check-position', help='Check position')
-    check_position_parser.add_argument('--show-position', '-p', metavar='address', help='Show position with specified address')
-    check_position_parser.add_argument('--show-positions', '-P', action='store_true', help='Show all positions')
+    check_position_parser.add_argument('--show_position', '-p', metavar='address', help='Show position with specified address')
+    check_position_parser.add_argument('--show_positions', '-P', action='store_true', help='Show all positions')
 
     # Subparser for 'check-fees' command
     check_fees_parser = subparsers.add_parser('check-fees', help='Check fees')
@@ -135,6 +141,8 @@ async def main():
         await cli_open_position(args)
     elif args.subcommand == 'gather-pool':
         await cli_pool_gathering(args)
+    elif args.subcommand == 'check-position':
+        await cli_check_position(args)
     # Add more elif blocks for other subcommands
     else:
         parser.error("Invalid operation")
