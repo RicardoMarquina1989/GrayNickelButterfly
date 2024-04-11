@@ -8,8 +8,10 @@ Those are features i can imagine to add to that tool, as soon as we are done wit
 	2. confgure set
 		1. private key
 	3. swap, from token to token
-	4. autoswap, if token amount of token0 or token1 is not enough for position
-	5. show current and past data/positions (from database)
+	- swapping from one token to the other
+  	- 
+	5. autoswap, if token amount of token0 or token1 is not enough for position
+	6. show current and past data/positions (from database)
 
 2. Database
   
