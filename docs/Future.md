@@ -9,9 +9,12 @@ Those are features i can imagine to add to that tool, as soon as we are done wit
 		1. private key
 	3. swap, from token to token
 	- swapping from one token to the other
-  	- 
+  	- swapping all or defined tokens to one token (for instance all token to SOL or USDC)
+   	- using jupiter and orca for the start is ok  
 	5. autoswap, if token amount of token0 or token1 is not enough for position
-	6. show current and past data/positions (from database)
+    	- thats very important if the management has to be automatic, so that positions can be easily opened and closed
+     	- it is important here as well to check/simulate if transactions are working and trying to get the cheapest possible TX 
+	7. show current and past data/positions (from database)
 
 2. Database
   
