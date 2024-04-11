@@ -10,6 +10,7 @@ Those are features i can imagine to add to that tool, as soon as we are done wit
 	3. swap, from token to token
 	4. autoswap, if token amount of token0 or token1 is not enough for position
 	5. show current and past data/positions (from database)
+
 2. Database
   
    This includes the structure, init sql file and fields for all data necessary for later financial analysis as  well as the program code to interface with the database. The database itself can run in a docker container. Database to use is postgresql. The functionality for database interactions shall include as well calculations for PnL of positions, fees ...
@@ -31,7 +32,10 @@ Those are features i can imagine to add to that tool, as soon as we are done wit
 
 I think best order of those features is:
 
-1. Database Support
-2. Integration of Dexes
+1. Django Integration
+2. Database Support
+3. Integration of additional Dexes
+4. Then we check state and what makes sense next
 
-Then we check state and what makes sense next.
+
+
