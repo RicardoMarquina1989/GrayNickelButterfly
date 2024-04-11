@@ -11,10 +11,12 @@ Those are features i can imagine to add to that tool, as soon as we are done wit
 	- swapping from one token to the other
   	- swapping all or defined tokens to one token (for instance all token to SOL or USDC)
    	- using jupiter and orca for the start is ok  
-	5. autoswap, if token amount of token0 or token1 is not enough for position
+	4. autoswap, if token amount of token0 or token1 is not enough for position
     	- thats very important if the management has to be automatic, so that positions can be easily opened and closed
      	- it is important here as well to check/simulate if transactions are working and trying to get the cheapest possible TX 
-	7. show current and past data/positions (from database)
+	5. show current and past data/positions (from database)
+ 	6. Of course all the other functionality integrated in the first project for the commandline client
+	- check-pos, check-fees, open-position ...  
 
 2. Database
   
@@ -24,23 +26,33 @@ Those are features i can imagine to add to that tool, as soon as we are done wit
 		2. past positions
 		3. collected fees
 		4. swapped tokens
-5. Integration of other Dexes
+3. Integration of other Dexes
    
    There are other CLMM Pools, which are interesting to integrate. However, to my knowledge at least RAY has no Python SDK, but python is the language we stick to.
 	1. Raydium
 	2. Meteor
 
-6. Exploration and integration of other def/dex instruments like
+4. Exploration and integration of other def/dex instruments like
 	1. Kamino Finance
 	2. MarginFi
 	3. Solend
 
+5. Integration of creating orders at CEX/DEX.
+- Drift, Jupider, OKX
+- Orders must - where possible - have limit, market, stop-loss and take-profit options
+- DEX needs wallet deposit/withdraw of created accoutns
+- CEX need usually an api key
+
+
+### High Level Project Parts
+
 I think best order of those features is:
 
-1. Django Integration
+1. Django and Feature integration
 2. Database Support
-3. Integration of additional Dexes
-4. Then we check state and what makes sense next
+3. Integration of DEX/CEX
+4. Integration of additional Dex CLMM
+5. Then we check state and what makes sense next
 
 
 
