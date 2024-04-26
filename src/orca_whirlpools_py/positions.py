@@ -1,17 +1,7 @@
 import requests
 import time
-from typing import NamedTuple
 
 from solders.pubkey import Pubkey
-from solana.rpc.async_api import AsyncClient
-from solana.rpc.types import TokenAccountOpts
-from solders.keypair import Keypair
-from spl.token.constants import TOKEN_PROGRAM_ID
-
-from orca_whirlpool.accounts import AccountFinder, AccountFetcher
-from orca_whirlpool.constants import ORCA_WHIRLPOOL_PROGRAM_ID
-from orca_whirlpool.context import WhirlpoolContext
-from orca_whirlpool.utils import PoolUtil, TokenUtil, LiquidityMath, PriceMath, PDAUtil, PositionUtil
 
 # Global variable to hold cached data and its timestamp
 cached_data = {
@@ -22,7 +12,7 @@ cached_data = {
 # Expiration time in seconds (15 minutes)
 expiration_time = 15 * 60  
 
-async def find_positions(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey):
+async def find_positions():
     global cached_data
     
     # If data is already cached and not expired, return it
