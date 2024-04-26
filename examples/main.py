@@ -11,7 +11,7 @@ from utils import get_context
 
 '''    Sample command lines
 - Open a position with deposit
-python main.py open-position -u 250 -l 100 -wp HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ -a1 0.1 -c
+python main.py open-position -u 250 -l 100 -p HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ -a1 0.01 -c
 
 - Gathering pools
 python main.py gather-pool -a
@@ -41,8 +41,9 @@ async def cli_open_position(args):
     at_least_one_arg_provided(args.amount0, args.amount1)
     ctx = get_context()
     whirlpool_pubkey = Pubkey.from_string(args.pool)
+    
     await open_position(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey, upper=args.upper, lower=args.lower, slippage=args.slippage, priority_fee=args.priority_fee, amount0=args.amount0, amount1=args.amount1, check=args.check)
-
+    
 async def cli_increase_position(args):
     # Implement functionality for increasing a position
     pass
@@ -98,7 +99,6 @@ async def cli_check_position(args):
         print("Checking all positions is not supported yet, Sorry.")
     
     if args.show_wallet_positions is not None:
-        print("Checking specific position is not supported yet, Sorry.")
         wallet_pubkey = Pubkey.from_string(args.show_wallet_positions)
         print(f"wallet pubkey {wallet_pubkey}")
         positions = await get_positions_by_wallet_pubkey(connection=ctx.connection, wallet_pubkey=wallet_pubkey)
@@ -210,7 +210,7 @@ async def main():
     check_position_parser = subparsers.add_parser('check-position', help='Check position')
     check_position_parser.add_argument('--show_position', '-p', metavar='address', help='Show position with specified address')
     check_position_parser.add_argument('--show_positions', '-P', action='store_true', help='Show all positions')
-    check_position_parser.add_argument('--show_wallet_positions', '-w', metavar='address', help='Show all positions')
+    check_position_parser.add_argument('--show_wallet_positions', '-w', metavar='address', help='Show all positions the the specified wallet')
 
     # Subparser for 'check-fees' command
     check_fees_parser = subparsers.add_parser('check-fees', help='Check fees')
