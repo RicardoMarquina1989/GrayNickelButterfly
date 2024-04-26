@@ -1,8 +1,10 @@
-import random
 from decimal import Decimal
 
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
+from solders.signature import Signature
+from solana.rpc.async_api import AsyncClient
+
 from spl.token.constants import TOKEN_PROGRAM_ID
 from solana.rpc.types import TokenAccountOpts
 from solana.rpc.core import TransactionExpiredBlockheightExceededError
@@ -16,7 +18,6 @@ from orca_whirlpool.quote import QuoteBuilder, IncreaseLiquidityQuoteParams, Dec
 def rand_pubkey() -> Pubkey:
     return Keypair().pubkey()
 
-
 """
 @func:      Open a position     based on upper and lower parameters.
 @param:     WhirlpoolContext    ctx
@@ -25,7 +26,7 @@ def rand_pubkey() -> Pubkey:
 """
 async def open_position(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey, 
                         upper: float, lower: float, amount0: float=0, amount1: float=0,
-                        slippage:float=0.3, priority_fee: int = 0, check: bool = False):
+                        slippage:float=0.3, priority_fee: int = 0, check: bool = False) -> Signature:
     # get whirlpool
     whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
     decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals  # SOL_DECIMAL
@@ -65,7 +66,7 @@ async def open_position(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey,
 
     if check: 
         print('End of checking.')
-        return
+        return None
     # get ATA (considering WSOL)
     token_account_a = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_a, quote.token_max_a)
     token_account_b = await TokenUtil.resolve_or_create_ata(ctx.connection, ctx.wallet.pubkey(), whirlpool.token_mint_b, quote.token_max_b)
@@ -130,8 +131,21 @@ async def open_position(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey,
         tx.set_compute_unit_price(int(priority_fee * 10**6 / 200000))
     # execute
     print('Executing transactions...')
-    signature = await tx.build_and_execute()
-    print("TX signature", signature)
+    
+    try:
+        signature = await tx.build_and_execute()
+        await print_transaction_res_text(signature, ctx.connection)
+        return signature
+    except TransactionExpiredBlockheightExceededError as e:
+        # Handle the specific error
+        print("Transaction expired due to block height exceeded:", e)
+        return None
+        # Perform any necessary cleanup or retries if needed
+    except Exception as e:
+        # Handle other exceptions
+        print("An unexpected error occurred:", e)
+        # Perform appropriate actions, like logging, retrying, or exiting gracefully
+        return None
 
 """
 @func: Open a position based on upper and lower parameters.
@@ -179,9 +193,21 @@ async def open_position_only(ctx:WhirlpoolContext, whirlpool_pubkey: Pubkey, upp
     tx.add_instruction(open_position_ix)
     tx.add_signer(position_mint)
 
-    # Execute transaction
-    signature = await tx.build_and_execute()
-    print("TX signature", signature)
+    try:
+        # Execute transaction
+        signature = await tx.build_and_execute()
+        await print_transaction_res_text(signature, ctx.connection)
+        return signature
+    except TransactionExpiredBlockheightExceededError as e:
+        # Handle the specific error
+        print("Transaction expired due to block height exceeded:", e)
+        return None
+        # Perform any necessary cleanup or retries if needed
+    except Exception as e:
+        # Handle other exceptions
+        print("An unexpected error occurred:", e)
+        # Perform appropriate actions, like logging, retrying, or exiting gracefully
+        return None
 
 """
 @func:      Add liquidity to the specified position(select position address)
@@ -201,6 +227,7 @@ async def add_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, deposit_
     decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals  # SOL_DECIMAL
     decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals  # USDC_DECIMAL
     price = PriceMath.sqrt_price_x64_to_price(whirlpool.sqrt_price, decimals_a, decimals_b)
+    
     print('{:*^80}'.format("Whirlpool"))
     print('{:>20} {}'.format("whirlpool:", position.whirlpool))
     print('{:>20} {}'.format("token_mint_a:", whirlpool.token_mint_a))
@@ -303,10 +330,19 @@ async def add_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, deposit_
         # add priority fees (+ 1000 lamports)
         # tx.set_compute_unit_price(int(1000 * 10**6 / 200000))
         tx.set_compute_unit_price(int(priority_fee * 10**6 / 200000))
-    # execute
+    
     print('{:<80}'.format("Build and execute transaction..."))
-    signature = await tx.build_and_execute()
-    print('{:>20} {}'.format("TX signature:", signature))
+    try:
+        # execute
+        signature = await tx.build_and_execute()
+        await print_transaction_res_text(signature, ctx.connection)
+    except TransactionExpiredBlockheightExceededError as e:
+        # Handle the specific error
+        print("Transaction expired due to block height exceeded:", e)
+        # Perform any necessary cleanup or retries if needed
+    except Exception as e:
+        # Handle other exceptions
+        print("An unexpected error occurred:", e)
 
 '''
 @func: Harvest fees from a specific position
@@ -377,7 +413,7 @@ async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, 
         # Execute transaction
         print("Initiating updates for fees and rewards transactions. Please wait....")
         signature = await tx.build_and_execute()
-        print("TX signature", signature)
+        await print_transaction_res_text(signature, ctx.connection)
     # ----------- End Update_fees_and_rewards --------------
     
     # get ATA (considering WSOL)
@@ -422,7 +458,7 @@ async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, 
         # Execute transaction
         print("Processing fees collection transactions. Please wait...")
         signature = await tx.build_and_execute()
-        print("TX signature", signature)
+        await print_transaction_res_text(signature, ctx.connection)
     # ----------- End collect_fees --------------
 
     # ----------Start collect_rewards ---------------
@@ -483,8 +519,17 @@ async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, 
         tx.add_signer(ctx.wallet)
         # Execute transaction
         print("Initiating the process to collect rewards. Please wait...")
-        signature = await tx.build_and_execute()
-        print("TX signature", signature)
+        
+        try:
+            signature = await tx.build_and_execute()
+            await print_transaction_res_text(signature, ctx.connection)
+        except TransactionExpiredBlockheightExceededError as e:
+            # Handle the specific error
+            print("Transaction expired due to block height exceeded:", e)
+            # Perform any necessary cleanup or retries if needed
+        except Exception as e:
+            # Handle other exceptions
+            print("An unexpected error occurred:", e)
     else:
         print('{:<80}'.format("There aren't any rewards"))
     # ----------- End collect_rewards --------------
@@ -719,18 +764,12 @@ async def check_wallet_fees(ctx: WhirlpoolContext):
 """
 async def close_position(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippage:int=30, priority_fee: int = 0):
     print("Position closing...")
-    try:
-        whirlpool, position = await withdraw_liquidity(ctx=ctx, position_pubkey=position_pubkey, slippage=slippage, priority_fee=priority_fee)
-    except TransactionExpiredBlockheightExceededError as e:
-        # Handle the specific error
-        print("Transaction expired due to block height exceeded:", e)
-        return
-    except Exception as e:
-        # Handle other exceptions
-        print("Withdraw transaction failed")
-        return
+    whirlpool, position = await withdraw_liquidity(ctx=ctx, position_pubkey=position_pubkey, slippage=slippage, priority_fee=priority_fee)
     
-    
+    if whirlpool is None or position is None: 
+        print(f'Position(f{position_pubkey}) does not exist')
+        return
+
     # collect fees and rewards
     try:
         await build_execute_collect_fees_reward_transactions(ctx, whirlpool=whirlpool, position=position)
@@ -750,38 +789,39 @@ async def close_position(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippag
     ctx.fetcher.get_latest_block_timestamp
     
     # close position
-    try:
-        # build transaction
-        tx = TransactionBuilder(ctx.connection, ctx.wallet)
-        
-        close_position_ix = WhirlpoolIx.close_position(
-            ctx.program_id,
-            ClosePositionParams(
-                position_authority=ctx.wallet.pubkey(),
-                receiver=ctx.wallet.pubkey(),
-                position=position_pda,
-                position_mint=position.position_mint,
-                position_token_account=position_ata,
-            )
+    # build transaction
+    tx = TransactionBuilder(ctx.connection, ctx.wallet)
+    
+    close_position_ix = WhirlpoolIx.close_position(
+        ctx.program_id,
+        ClosePositionParams(
+            position_authority=ctx.wallet.pubkey(),
+            receiver=ctx.wallet.pubkey(),
+            position=position_pda,
+            position_mint=position.position_mint,
+            position_token_account=position_ata,
         )
-        tx.add_instruction(close_position_ix)
-        tx.add_signer(ctx.wallet)
-        if priority_fee is not None:
-            tx.set_compute_unit_limit(200000)
-            # add priority fees (+ 1000 lamports)
-            # tx.set_compute_unit_price(int(1000 * 10**6 / 200000))
-            tx.set_compute_unit_price(int(priority_fee * 10**6 / 200000))
-        # Execute transaction
-        print("Closing position process. Please wait...")
+    )
+    tx.add_instruction(close_position_ix)
+    tx.add_signer(ctx.wallet)
+    if priority_fee is not None:
+        tx.set_compute_unit_limit(200000)
+        # add priority fees (+ 1000 lamports)
+        # tx.set_compute_unit_price(int(1000 * 10**6 / 200000))
+        tx.set_compute_unit_price(int(priority_fee * 10**6 / 200000))
+    # Execute transaction
+    print("Closing position process. Please wait...")
+    
+    try:
         signature = await tx.build_and_execute()
-        print("TX signature", signature)
+        await print_transaction_res_text(signature, ctx.connection)
     except TransactionExpiredBlockheightExceededError as e:
         # Handle the specific error
         print("Transaction expired due to block height exceeded:", e)
-        return
+        # Perform any necessary cleanup or retries if needed
     except Exception as e:
-        print("Closing transaction failed")
-        return
+        # Handle other exceptions
+        print("An unexpected error occurred:", e)
 
 '''
 Decrease liquidity
@@ -790,6 +830,10 @@ async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, sli
     
     position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
     position = await ctx.fetcher.get_position(position_pda, True)
+    
+    if position is None:
+        return (None, None)
+    
     position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position_pubkey)
     
     whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=position.whirlpool)
@@ -854,8 +898,97 @@ async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, sli
     tx.add_signer(ctx.wallet)
 
     # Execute transaction
-    print("Executing withraw transaction...")
-    signature = await tx.build_and_execute()
-    print("TX signature", signature)
+    print("Executing withdraw transaction...")
 
-    return (whirlpool, position)
+    try:
+        signature = await tx.build_and_execute()
+        await print_transaction_res_text(signature, ctx.connection)
+        return (whirlpool, position)
+    except TransactionExpiredBlockheightExceededError as e:
+        # Handle the specific error
+        print("Transaction expired due to block height exceeded:", e)
+        return (None, None)
+        # Perform any necessary cleanup or retries if needed
+    except Exception as e:
+        # Handle other exceptions
+        print("An unexpected error occurred:", e)
+        # Perform appropriate actions, like logging, retrying, or exiting gracefully
+        return (None, None)
+    
+
+'''
+Check GetSignatureStatusesResp from Signature
+'''
+async def get_transaction_status(tx_signature: Signature, async_client: AsyncClient):
+    signatures = [tx_signature]
+    resp = await async_client.get_signature_statuses(signatures,search_transaction_history=True)
+    resp_json = resp.value
+    
+    '''
+    A JSON object with the following fields:
+    confirmationStatus
+        The transaction's cluster confirmation status. It can either be processed, confirmed, or finalized
+    confirmations
+        The number of confirmations a transaction has received. If the transaction is finalized (i.e., confirmed at the highest level of commitment), the value will be null
+    err
+        Error code if the transaction failed or null if the transaction succeeds
+    slot
+        The slot number in which the transaction was confirmed
+    status
+        The processing status of the transaction. It returns Ok if the transaction was successful and Err if the transaction failed with TransactionError
+    '''
+    
+    # return {key: resp_json[0][key] for key in ['confirmationStatus', 'confirmations', 'err', 'slot', 'status']}
+    return {
+        'err':                  resp_json[0].err,
+        'slot':                 resp_json[0].slot,
+        'status':               resp_json[0].status,
+        'confirmations':        resp_json[0].confirmations,
+        'confirmation_status':   resp_json[0].confirmation_status
+    }
+
+'''
+Just convert from GetSignatureStatusesResp to string
+'''
+def convert_transaction_status2str(transaction):
+    # Extracting individual fields
+    confirmation_status = str(transaction.get('confirmation_status'))
+    confirmations = transaction.get('confirmations')
+    err = transaction.get('err')
+
+    # Generating xx
+    xx = "Success" if err is None else "Fail"
+
+    # Generating zz
+    zz = str(confirmations) if confirmations is not None else "MAX Confirmations"
+
+    # Generating yy
+    converted = f"{xx} | {confirmation_status} {zz}"
+    
+    return converted
+
+'''
+@todo: Get transaction status as human readable string from Signature instance.
+'''
+async def get_transaction_res_text(tx_signature: Signature, async_client: AsyncClient):
+    if tx_signature is None:
+        return ''
+    
+    transaction_status = await get_transaction_status(tx_signature, async_client)
+    converted = convert_transaction_status2str(transaction_status)
+
+    return converted
+
+'''
+@todo: Print transaction status as human readable string from Signature instance after transaction was executed.
+'''
+async def print_transaction_res_text(tx_signature: Signature, async_client: AsyncClient):
+    if tx_signature is None: return
+    
+    print('{:-^40}'.format("Transaction Result"))
+    print('TX signature:', tx_signature)
+    print(f"https://solscan.io/tx/{tx_signature}")
+
+    res_text = await get_transaction_res_text(tx_signature, async_client)
+    if res_text != None:
+        print(res_text)
