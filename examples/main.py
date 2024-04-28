@@ -174,6 +174,16 @@ async def handle_subcommand(args):
 
 
 """Main function to parse arguments and execute operations."""
+
+def validate_slippage(value):
+    try:
+        f_value = float(value)
+        if not 0 <= f_value <= 1:
+            raise argparse.ArgumentTypeError(f"Slippage value must be a float between 0 and 1")
+        return f_value
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Invalid slippage value '{value}'. Please provide a float between 0 and 1.")
+
 async def main():
     parser = argparse.ArgumentParser(description='ORCA Script CLI')
     subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
@@ -183,7 +193,7 @@ async def main():
     open_position_parser.add_argument('--lower', '-l', required=True, type=float, help='Lower end')
     open_position_parser.add_argument('--upper', '-u', required=True, type=float, help='Upper end')
     open_position_parser.add_argument('--pool', '-p', required=True, help='Pool address')
-    open_position_parser.add_argument('--slippage', '-s', default=0.3, type=float, help='Slippage')
+    open_position_parser.add_argument('--slippage', '-s', default=0.3, type=validate_slippage, help='Slippage')
     open_position_parser.add_argument('--priority_fee', '-pf', default=0, help='Priority fee, unit: lamport, example: 1000')
     # open_position_parser.add_argument('--token0', '-t0', required=True, help='Token0 address')
     # open_position_parser.add_argument('--token1', '-t1', required=True, help='Token1 address')
