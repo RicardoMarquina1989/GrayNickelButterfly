@@ -1,4 +1,5 @@
 from decimal import Decimal
+import base58
 
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
@@ -39,8 +40,7 @@ async def open_position(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey,
     deposit_decimals = decimals_b if is_amount0_empty else decimals_a
     
     input_amount = DecimalUtil.to_u64(Decimal(deposit_amount), deposit_decimals)
-    slippage *= 100
-    acceptable_slippage = Percentage.from_fraction(int(slippage), 100)
+    acceptable_slippage = Percentage.from_fraction(int(slippage*100), 100)
     # price_lower = price / 2
     # price_upper = price * 2
     tick_lower_index = PriceMath.price_to_initializable_tick_index(Decimal(lower), decimals_a, decimals_b, whirlpool.tick_spacing)
@@ -130,6 +130,10 @@ async def open_position(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey,
         # tx.set_compute_unit_price(int(1000 * 10**6 / 200000))
         tx.set_compute_unit_price(int(priority_fee * 10**6 / 200000))
     # execute
+    
+    print('{:>20} {}'.format("slippage:", slippage))
+    print('{:>20} {}'.format("priority_fee:", priority_fee))
+    
     print('Executing transactions...')
     
     try:
@@ -992,3 +996,17 @@ async def print_transaction_res_text(tx_signature: Signature, async_client: Asyn
     res_text = await get_transaction_res_text(tx_signature, async_client)
     if res_text != None:
         print(res_text)
+
+def validate_solana_address(address):
+    # Check length
+    if len(address) != 44:
+        return False
+    # Character set
+    try:
+        decoded_address = base58.b58decode(address.encode())
+    except:
+        return False
+    # Prefix
+    # if not address.startswith("G"):
+    #     return False
+    return True
