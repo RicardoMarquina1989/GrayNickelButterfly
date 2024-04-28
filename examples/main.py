@@ -4,7 +4,7 @@ import asyncio
 from solders.pubkey import Pubkey
 
 from orca_whirlpools_py.whirlpools import find_whirlpools, get_liquidity_distribution_by_whirlpools_pubkey, get_positions_by_wallet_pubkey
-from orca_whirlpools_py.position_manager import open_position, add_liquidity, harvest_position_fees, harvest_whirlpool_fees, harvest_wallet_fees, get_whirlpool_and_show_info, check_position_fees, check_fees_rewards_of_position, check_whirlpool_fees, check_wallet_fees, close_position, withdraw_liquidity
+from orca_whirlpools_py.position_manager import open_position, add_liquidity, harvest_position_fees, harvest_whirlpool_fees, harvest_wallet_fees, get_whirlpool_and_show_info, check_position_fees, check_fees_rewards_of_position, check_whirlpool_fees, check_wallet_fees, close_position, withdraw_liquidity, validate_solana_address
 from orca_whirlpools_py.positions import find_positions
 
 from utils import get_context
@@ -90,17 +90,21 @@ async def cli_close_position(args):
 
 async def cli_check_position(args):
     # Implement functionality for checking a position
-    ctx = get_context()
-    if args.show_position is not None:
+    ctx = get_context(True)
+    if args.show_position != None:
         print("Checking specific position is not supported yet, Sorry.")
         return
     # get all positions
     if args.show_positions:
         print("Checking all positions is not supported yet, Sorry.")
     
-    if args.show_wallet_positions is not None:
+    if args.show_wallet_positions != None:
+        if validate_solana_address(args.show_wallet_positions) == False:
+            print('Invalid Wallet Address')
+            return
+        
         wallet_pubkey = Pubkey.from_string(args.show_wallet_positions)
-        print(f"wallet pubkey {wallet_pubkey}")
+        print(f"Wallet Pubkey {wallet_pubkey}")
         positions = await get_positions_by_wallet_pubkey(connection=ctx.connection, wallet_pubkey=wallet_pubkey)
         for position in positions:
             if position is None:
@@ -210,7 +214,7 @@ async def main():
     check_position_parser = subparsers.add_parser('check-position', help='Check position')
     check_position_parser.add_argument('--show_position', '-p', metavar='address', help='Show position with specified address')
     check_position_parser.add_argument('--show_positions', '-P', action='store_true', help='Show all positions')
-    check_position_parser.add_argument('--show_wallet_positions', '-w', metavar='address', help='Show all positions the the specified wallet')
+    check_position_parser.add_argument('--show_wallet_positions', '-w', metavar='address', help='Show all positions of the specified wallet')
 
     # Subparser for 'check-fees' command
     check_fees_parser = subparsers.add_parser('check-fees', help='Check fees')
