@@ -1,14 +1,19 @@
-from decimal import Decimal
+import sys
 import base58
+from decimal import Decimal
+from construct import Struct, Int64ul, Int32ul, Int8ul, Bytes
 
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from solders.signature import Signature
-from solana.rpc.async_api import AsyncClient
 
-from spl.token.constants import TOKEN_PROGRAM_ID
+from solana.rpc.async_api import AsyncClient
 from solana.rpc.types import TokenAccountOpts
 from solana.rpc.core import TransactionExpiredBlockheightExceededError
+
+# from spl.token.layouts import ACCOUNT_LAYOUT as SPL_ACCOUNT_LAYOUT
+from spl.token.constants import TOKEN_PROGRAM_ID
+
 from orca_whirlpool.types import Percentage
 from orca_whirlpool.context import WhirlpoolContext
 from orca_whirlpool.instruction import WhirlpoolIx, OpenPositionParams, CollectFeesParams, ClosePositionParams, CollectProtocolFeesParams, CollectRewardParams, DecreaseLiquidityParams, UpdateFeesAndRewardsParams, IncreaseLiquidityParams
@@ -16,8 +21,51 @@ from orca_whirlpool.transaction import TransactionBuilder
 from orca_whirlpool.utils import TokenUtil, TickArrayUtil, DecimalUtil, PriceMath, PositionUtil, PDAUtil, TickUtil, LiquidityMath
 from orca_whirlpool.quote import QuoteBuilder, IncreaseLiquidityQuoteParams, DecreaseLiquidityQuoteParams, CollectFeesQuoteParams, CollectRewardsQuoteParams
 
-def rand_pubkey() -> Pubkey:
-    return Keypair().pubkey()
+from solana.rpc.api import Client
+
+SOL_TOKEN_MINT_ADDRESS = 'So11111111111111111111111111111111111111112'
+SPL_ACCOUNT_LAYOUT = Struct(
+    "mint"               / Bytes(32),
+    "owner"              / Bytes(32),
+    "amount"             / Int64ul,
+    "delegate_option"     / Int32ul,
+    "delegate"           / Bytes(32),
+    "state"              / Int8ul,
+    "is_native_option"     / Int32ul,
+    "is_native"           / Int64ul,
+    "delegated_amount"    / Int64ul,
+    "close_authority_option" / Int32ul,
+    "close_authority"     / Bytes(32),
+)
+
+'''
+@func       Check balance of the token in the wallet
+            When the balance is insufficient, exit the program
+@return Bool
+    True:   Sufficient,
+    False:  Insufficient
+'''
+async def check_sufficient(ctx, token_mint_address, token_decimals, deposit_amount, token_fake_symbol):
+    solana_client = ctx.connection
+
+    balance = 0
+    
+    if str(token_mint_address) == SOL_TOKEN_MINT_ADDRESS:
+        res = await solana_client.get_balance(ctx.wallet.pubkey())
+        balance = res.value
+    else:
+        res = await solana_client.get_token_accounts_by_owner(ctx.wallet.pubkey(),TokenAccountOpts(mint=token_mint_address))
+        if len(res.value) > 0:
+            decoded_data = SPL_ACCOUNT_LAYOUT.parse(res.value[0].account.data)
+            balance = decoded_data.amount/10**token_decimals
+        else:
+            balance = 0
+
+    if deposit_amount > balance:
+        print(f"Insufficient Balance of Token{token_fake_symbol}: {balance}")
+        sys.exit()
+    
+    return deposit_amount >= balance, balance
 
 """
 @func:      Open a position     based on upper and lower parameters.
@@ -29,17 +77,30 @@ async def open_position(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey,
                         upper: float, lower: float, amount0: float=0, amount1: float=0,
                         slippage:float=0.3, priority_fee: int = 0, check: bool = False) -> Signature:
     # get whirlpool
-    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
-    decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals  # SOL_DECIMAL
-    decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals  # USDC_DECIMAL
+    whirlpool, price = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+    decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals
+    decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals
 
     # input
     is_amount0_empty = amount0 is None or amount0 <= 0
     input_token = whirlpool.token_mint_b if is_amount0_empty else whirlpool.token_mint_a
     deposit_amount = amount1 if is_amount0_empty else amount0
     deposit_decimals = decimals_b if is_amount0_empty else decimals_a
-    
     input_amount = DecimalUtil.to_u64(Decimal(deposit_amount), deposit_decimals)
+
+    real_amount0 = 0
+    real_amount1 = 0
+    
+    if is_amount0_empty: 
+        real_amount1 = amount1
+        real_amount0 = Decimal(amount1) / price
+    else:
+        real_amount0 = amount0
+        real_amount1 = Decimal(amount0) * price
+
+    await check_sufficient(ctx, whirlpool.token_mint_a, decimals_a, real_amount0, 'A')
+    await check_sufficient(ctx, whirlpool.token_mint_b, decimals_b, real_amount1, 'B')
+    
     acceptable_slippage = Percentage.from_fraction(int(slippage*100), 100)
     # price_lower = price / 2
     # price_upper = price * 2
@@ -609,9 +670,10 @@ async def get_whirlpool_and_show_info(ctx: WhirlpoolContext, whirlpool_pubkey: P
     whirlpool = await ctx.fetcher.get_whirlpool(whirlpool_pubkey)
     if whirlpool is None:
         return
+
     # To log progress status
-    decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals  # SOL_DECIMAL
-    decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals  # USDC_DECIMAL
+    decimals_a = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_a)).decimals
+    decimals_b = (await ctx.fetcher.get_token_mint(whirlpool.token_mint_b)).decimals
     price = PriceMath.sqrt_price_x64_to_price(whirlpool.sqrt_price, decimals_a, decimals_b)
     print('{:*^80}'.format("Whirlpool"))
     print('{:>20} {}'.format("whirlpool:", whirlpool.pubkey))
@@ -622,7 +684,7 @@ async def get_whirlpool_and_show_info(ctx: WhirlpoolContext, whirlpool_pubkey: P
     print('{:>20} {}'.format("sqrt_price:", whirlpool.sqrt_price))
     print('{:>20} {}'.format("price:", DecimalUtil.to_fixed(price, decimals_b)))
 
-    return whirlpool
+    return whirlpool, price
 
 '''
 @func: Check fees and rewards of a specific position
@@ -1003,7 +1065,7 @@ def validate_solana_address(address):
         return False
     # Character set
     try:
-        decoded_address = base58.b58decode(address.encode())
+        base58.b58decode(address.encode())
     except:
         return False
     # Prefix

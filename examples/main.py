@@ -12,6 +12,7 @@ from utils import get_context
 '''    Sample command lines
 - Open a position with deposit
 python main.py open-position -u 250 -l 100 -p HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ -a1 0.01 -c
+python main.py open-position -u 250 -l 100 -p C1MgLojNLWBKADvu9BHdtgzz1oZX4dZ5zGdGcgvvW8Wz -a0 0.01 -c
 
 - Gathering pools
 python main.py gather-pool -a
