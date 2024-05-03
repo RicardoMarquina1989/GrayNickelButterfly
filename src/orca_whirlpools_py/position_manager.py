@@ -419,7 +419,7 @@ async def harvest_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
     position = await ctx.fetcher.get_position(position_pda, True)
     whirlpool_pubkey = position.whirlpool
     # get whirlpool
-    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+    whirlpool, price = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
     
     # Execute transaction
     print('{:<80}'.format("Building and Executing transactions to collect fees of the position..."))
@@ -604,7 +604,7 @@ async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, 
 '''
 async def harvest_whirlpool_fees(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey):
     print("Harvest fees and reward of the positions of the whirlpool")
-    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+    whirlpool, price = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
 
     # list all token accounts
     res = await ctx.connection.get_token_accounts_by_owner(
@@ -695,7 +695,7 @@ async def check_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
     position = await ctx.fetcher.get_position(position_pda, True)
     whirlpool_pubkey = position.whirlpool
     # get whirlpool
-    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+    whirlpool, price = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
     
     # Execute transaction
     print('{:<80}'.format("Checking fees and rewards of the position..."))
@@ -777,7 +777,7 @@ async def check_fees_rewards_of_position(ctx: WhirlpoolContext, whirlpool, posit
 '''
 async def check_whirlpool_fees(ctx: WhirlpoolContext, whirlpool_pubkey: Pubkey):
     print("Check fees and reward of the positions of the whirlpool")
-    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
+    whirlpool, price = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=whirlpool_pubkey)
 
     # list all token accounts
     res = await ctx.connection.get_token_accounts_by_owner(
@@ -902,7 +902,7 @@ async def withdraw_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, sli
     
     position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position_pubkey)
     
-    whirlpool = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=position.whirlpool)
+    whirlpool, price = await get_whirlpool_and_show_info(ctx=ctx, whirlpool_pubkey=position.whirlpool)
 
     if position.liquidity == 0:
         print('Ballance of the position is zero.')
