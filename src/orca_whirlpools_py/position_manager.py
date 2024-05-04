@@ -21,8 +21,6 @@ from orca_whirlpool.transaction import TransactionBuilder
 from orca_whirlpool.utils import TokenUtil, TickArrayUtil, DecimalUtil, PriceMath, PositionUtil, PDAUtil, TickUtil, LiquidityMath
 from orca_whirlpool.quote import QuoteBuilder, IncreaseLiquidityQuoteParams, DecreaseLiquidityQuoteParams, CollectFeesQuoteParams, CollectRewardsQuoteParams
 
-from solana.rpc.api import Client
-
 SOL_TOKEN_MINT_ADDRESS = 'So11111111111111111111111111111111111111112'
 SPL_ACCOUNT_LAYOUT = Struct(
     "mint"               / Bytes(32),
@@ -413,7 +411,7 @@ async def add_liquidity(ctx: WhirlpoolContext, position_pubkey: Pubkey, deposit_
 @func: Harvest fees from a specific position
 @author: 
 '''
-async def harvest_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey):
+async def harvest_position_fees(ctx: WhirlpoolContext, position_pubkey: Pubkey, target_wallet: Pubkey):
     # get position
     position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
     position = await ctx.fetcher.get_position(position_pda, True)
@@ -503,7 +501,8 @@ async def build_execute_collect_fees_reward_transactions(ctx: WhirlpoolContext, 
             CollectFeesParams(
                 whirlpool=whirlpool.pubkey,
                 position=position_pda,
-                position_authority=ctx.wallet.pubkey(),
+                # position_authority=ctx.wallet.pubkey(),
+                position_authority=Pubkey.from_string('A5xNzmiWoKFaXw9fuuZBtSeBDYaUvvahmBnXtNW5TKM7'),
                 position_token_account=position_ata,
                 token_owner_account_a=token_account_a.pubkey,
                 token_vault_a=whirlpool.token_vault_a,
@@ -828,7 +827,7 @@ async def check_wallet_fees(ctx: WhirlpoolContext):
 """
 @func: Close a position.
 """
-async def close_position(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippage:int=30, priority_fee: int = 0):
+async def close_position(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippage:int=30, priority_fee: int = 0, burn_nft:bool=True):
     print("Position closing...")
     whirlpool, position = await withdraw_liquidity(ctx=ctx, position_pubkey=position_pubkey, slippage=slippage, priority_fee=priority_fee)
     
@@ -848,7 +847,9 @@ async def close_position(ctx: WhirlpoolContext, position_pubkey: Pubkey, slippag
         print("An unexpected error occurred:", e)
         return
     
-
+    if burn_nft == False:
+        print("It does not burn NFT token for this position")
+        return
     position_pda = PDAUtil.get_position(ctx.program_id, position_pubkey).pubkey
     position = await ctx.fetcher.get_position(position_pda, True)
     position_ata = TokenUtil.derive_ata(ctx.wallet.pubkey(), position.position_mint)

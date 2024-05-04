@@ -31,6 +31,7 @@ python main.py get-fees -f CA8bLurQjd8m8qwPH8NLnq1TL6fixxKEMYxxG8ZEKc5T
 
 - Close specified position and withdraw
 python main.py close-position -p CA8bLurQjd8m8qwPH8NLnq1TL6fixxKEMYxxG8ZEKc5T
+python main.py close-position -p HSay61bFtZDCA6VbtLt6ieoCECJueSm5VF1XYvDLqtxg -l
 
 - Check positions of wallet
 python main.py check-position -w 93jK1URnVqR9j5CLfiEuJEN3jtKkr5dtqcs1PuLpsYAJ
@@ -87,7 +88,7 @@ async def cli_close_position(args):
     ctx = get_context()
     position = Pubkey.from_string(args.position)
     priority_fee = int(args.priority_fee)
-    await close_position(ctx=ctx, position_pubkey=position, slippage=args.slippage, priority_fee=priority_fee)
+    await close_position(ctx=ctx, position_pubkey=position, slippage=args.slippage, priority_fee=priority_fee, burn_nft=not args.keep_nft)
 
 async def cli_check_position(args):
     # Implement functionality for checking a position
@@ -140,7 +141,9 @@ async def cli_get_fees(args):
     # Implement functionality for getting fees
     ctx = get_context()
     if args.to_wallet is not None:
-        print('Transfering fees to specified wallet is not supported yet, Sorry.')
+        position_pubkey = Pubkey.from_string(args.get_fees)
+        target_wallet = Pubkey.from_string(args.to_wallet)
+        await harvest_position_fees(ctx=ctx, position_pubkey=position_pubkey, target_wallet=target_wallet)
         return
     if args.get_fees is not None:
         position_pubkey = Pubkey.from_string(args.get_fees)
@@ -219,7 +222,7 @@ async def main():
     close_position_parser.add_argument('--position', '-p', metavar='<address>', help='Close position with specified address')
     close_position_parser.add_argument('--slippage', '-s', default=0.3, help='Slippage')
     close_position_parser.add_argument('--priority_fee', '-pf', default=0, help='Priority fee, unit: lamport, example: 1000')
-    # close_position_parser.add_argument("--check", '-c', action="store_true", help="Flag to indicate whether to perform a closing")
+    close_position_parser.add_argument("--keep_nft", '-l', action="store_true", help="Flag to indicate whether keep or burn the nft token ")
 
     # Subparser for 'check-position' command
     check_position_parser = subparsers.add_parser('check-position', help='Check position')
